@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FD Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+/* ── RESET & BASE ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg0:      #0a0b0d;
+  --bg1:      #111318;
+  --bg2:      #181b21;
+  --bg3:      #1f232c;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,140,0,0.25);
+  --fire:     #ff6a00;
+  --fire2:    #ff9500;
+  --amber:    #ffb347;
+  --red:      #e03c3c;
+  --green:    #3dba7a;
+  --blue:     #4a9eff;
+  --text:     #d8dce8;
+  --muted:    #5c6275;
+  --mono:     'Share Tech Mono', monospace;
+  --head:     'Barlow Condensed', sans-serif;
+  --body:     'Barlow', sans-serif;
+}
+
+html, body {
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--body);
+  color: var(--text);
+  user-select: none;
+}
+
+/* ── OVERLAY ──────────────────────────────────── */
+#overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+#overlay.visible { opacity: 1; pointer-events: all; }
+
+/* ── PANEL ────────────────────────────────────── */
+#panel {
+  width: 980px; height: 680px;
+  background: var(--bg1);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  grid-template-columns: 220px 1fr;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(255,106,0,0.12), 0 30px 80px rgba(0,0,0,0.7);
+  transform: scale(0.95) translateY(10px);
+  transition: transform .3s cubic-bezier(.175,.885,.32,1.1);
+}
+#overlay.visible #panel { transform: scale(1) translateY(0); }
+
+/* scan-line overlay */
+#panel::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,0,0,0.04) 3px,
+    rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+/* ── HEADER ───────────────────────────────────── */
+#header {
+  grid-column: 1 / -1;
+  background: var(--bg0);
+  border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 14px;
+}
+
+.header-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--fire), var(--fire2));
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: #fff;
+  flex-shrink: 0;
+}
+.header-title {
+  font-family: var(--head);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.header-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fire);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.header-spacer { flex: 1; }
+.header-status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--muted); letter-spacing: 1px;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; } 50% { opacity: .4; }
+}
+#close-btn {
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted); font-size: 13px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+  margin-left: 8px;
+}
+#close-btn:hover { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* ── SIDEBAR ──────────────────────────────────── */
+#sidebar {
+  background: var(--bg0);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  display: flex; flex-direction: column; gap: 2px;
+  overflow-y: auto;
+}
+.nav-section {
+  font-family: var(--mono); font-size: 9px;
+  color: var(--muted); letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 16px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  font-family: var(--head); font-weight: 600;
+  font-size: 13px; letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 2px solid transparent;
+  transition: all .15s;
+  position: relative;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.nav-item.active {
+  color: var(--fire2);
+  background: rgba(255,106,0,0.07);
+  border-left-color: var(--fire);
+}
+.nav-item i { width: 16px; text-align: center; font-size: 12px; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--fire);
+  color: #000; font-family: var(--mono);
+  font-size: 9px; font-weight: bold;
+  padding: 1px 5px; border-radius: 2px;
+  min-width: 18px; text-align: center;
+}
+
+/* ── CONTENT ──────────────────────────────────── */
+#content {
+  background: var(--bg1);
+  overflow-y: auto;
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+#content::-webkit-scrollbar { width: 4px; }
+#content::-webkit-scrollbar-track { background: var(--bg0); }
+#content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.page { display: none; flex-direction: column; gap: 16px; }
+.page.active { display: flex; }
+
+/* ── SECTION CARD ─────────────────────────────── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.card-header-title {
+  font-family: var(--head); font-weight: 700;
+  font-size: 12px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text);
+}
+.card-header i { color: var(--fire); font-size: 11px; }
+.card-header-spacer { flex: 1; }
+.card-body { padding: 14px; }
+
+/* ── STATS ROW ────────────────────────────────── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+.stat-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px 14px;
+  position: relative; overflow: hidden;
+}
+.stat-box::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--fire);
+}
+.stat-label {
+  font-family: var(--mono); font-size: 9px;
+  color: var(--muted); letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.stat-value {
+  font-family: var(--head); font-weight: 900;
+  font-size: 26px; color: #fff;
+  line-height: 1;
+}
+.stat-value.green { color: var(--green); }
+.stat-value.fire { color: var(--fire2); }
+.stat-value.blue { color: var(--blue); }
+.stat-value.red  { color: var(--red); }
+
+/* ── TABLE ────────────────────────────────────── */
+.fd-table { width: 100%; border-collapse: collapse; }
+.fd-table th {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); text-align: left;
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+}
+.fd-table td {
+  padding: 8px 10px;
+  font-size: 12px; color: var(--text);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+}
+.fd-table tr:last-child td { border-bottom: none; }
+.fd-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ── BADGES ───────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 2px;
+  font-family: var(--mono); font-size: 9px;
+  font-weight: bold; letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.badge-on    { background: rgba(61,186,122,0.15); color: var(--green); border: 1px solid rgba(61,186,122,0.3); }
+.badge-off   { background: rgba(92,98,117,0.2);  color: var(--muted); border: 1px solid rgba(255,255,255,0.07); }
+.badge-fire  { background: rgba(255,106,0,0.15); color: var(--fire2); border: 1px solid rgba(255,106,0,0.3); }
+.badge-prio1 { background: rgba(74,158,255,0.15); color: var(--blue); border: 1px solid rgba(74,158,255,0.3); }
+.badge-prio2 { background: rgba(255,179,71,0.15); color: var(--amber); border: 1px solid rgba(255,179,71,0.3); }
+.badge-prio3 { background: rgba(224,60,60,0.15);  color: var(--red); border: 1px solid rgba(224,60,60,0.3); }
+
+/* ── BUTTONS ──────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 3px;
+  font-family: var(--head); font-weight: 700;
+  font-size: 11px; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer;
+  border: 1px solid transparent; transition: all .15s;
+}
+.btn-fire {
+  background: linear-gradient(135deg, var(--fire), #cc5200);
+  color: #fff; border-color: var(--fire);
+}
+.btn-fire:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent; color: var(--muted);
+  border-color: var(--border);
+}
+.btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+.btn-danger {
+  background: rgba(224,60,60,0.15); color: var(--red);
+  border-color: rgba(224,60,60,0.3);
+}
+.btn-danger:hover { background: var(--red); color: #fff; }
+.btn-success {
+  background: rgba(61,186,122,0.15); color: var(--green);
+  border-color: rgba(61,186,122,0.3);
+}
+.btn-success:hover { background: var(--green); color: #000; }
+.btn-sm { padding: 4px 8px; font-size: 10px; }
+
+/* ── FORM CONTROLS ────────────────────────────── */
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 130px; }
+.form-label {
+  font-family: var(--mono); font-size: 9px;
+  color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+}
+.form-input, .form-select {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: var(--mono); font-size: 11px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.form-input::placeholder { color: var(--muted); }
+.form-input:focus, .form-select:focus { border-color: var(--fire); }
+.form-select option { background: var(--bg0); }
+
+/* ── PLAYER CARD ──────────────────────────────── */
+.player-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 6px;
+  transition: border-color .15s;
+}
+.player-card:hover { border-color: rgba(255,106,0,0.2); }
+.player-avatar {
+  width: 36px; height: 36px; border-radius: 3px;
+  background: linear-gradient(135deg, var(--fire), #661a00);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff; flex-shrink: 0;
+}
+.player-info { flex: 1; }
+.player-name {
+  font-family: var(--head); font-weight: 700;
+  font-size: 14px; color: #fff;
+}
+.player-meta {
+  font-family: var(--mono); font-size: 9px;
+  color: var(--muted); margin-top: 2px;
+}
+.player-actions { display: flex; gap: 6px; }
+
+/* ── CALLOUT ITEM ─────────────────────────────── */
+.callout-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--fire);
+  border-radius: 3px;
+  margin-bottom: 6px;
+}
+.callout-icon {
+  width: 34px; height: 34px;
+  background: rgba(255,106,0,0.12);
+  border: 1px solid rgba(255,106,0,0.2);
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--fire); font-size: 14px;
+}
+.callout-info { flex: 1; }
+.callout-title { font-family: var(--head); font-weight: 700; font-size: 14px; color: #fff; }
+.callout-meta { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
+.callout-actions { display: flex; gap: 6px; }
+
+/* ── EMPTY STATE ──────────────────────────────── */
+.empty-state {
+  padding: 30px; text-align: center;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--muted); letter-spacing: 1px;
+}
+.empty-state i { font-size: 28px; margin-bottom: 10px; opacity: .3; display: block; }
+
+/* ── TOAST ────────────────────────────────────── */
+#toast-container {
+  position: fixed; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column-reverse; gap: 8px;
+  z-index: 9999;
+}
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; min-width: 260px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 12px;
+  animation: slide-in .25s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error   { border-left: 3px solid var(--red); }
+.toast.info    { border-left: 3px solid var(--fire); }
+@keyframes slide-in {
+  from { opacity:0; transform: translateX(20px); }
+  to   { opacity:1; transform: translateX(0); }
+}
+
+/* ── SCROLLBAR ────────────────────────────────── */
+#sidebar::-webkit-scrollbar { width: 3px; }
+#sidebar::-webkit-scrollbar-track { background: transparent; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div id="panel">
+
+    <!-- HEADER -->
+    <header id="header">
+      <div class="header-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <div>
+        <div class="header-title">Fire Department</div>
+        <div class="header-sub">Command & Control · Admin Panel</div>
+      </div>
+      <div class="header-spacer"></div>
+      <div class="header-status">
+        <div class="status-dot"></div>
+        <span id="server-time">SYSTEM ONLINE</span>
+      </div>
+      <button id="close-btn" onclick="closePanel()"><i class="fa-solid fa-xmark"></i></button>
+    </header>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar">
+      <div class="nav-section">Übersicht</div>
+      <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <i class="fa-solid fa-gauge-high"></i> Dashboard
+      </div>
+
+      <div class="nav-section">Einsätze</div>
+      <div class="nav-item" onclick="showPage('callouts')" data-page="callouts">
+        <i class="fa-solid fa-bell"></i> Aktive Einsätze
+        <span class="nav-badge" id="callout-badge">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('create-callout')" data-page="create-callout">
+        <i class="fa-solid fa-plus"></i> Einsatz erstellen
+      </div>
+
+      <div class="nav-section">Personal</div>
+      <div class="nav-item" onclick="showPage('players')" data-page="players">
+        <i class="fa-solid fa-users"></i> Spieler
+        <span class="nav-badge" id="player-badge">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('duty')" data-page="duty">
+        <i class="fa-solid fa-clock"></i> Dienststatus
+      </div>
+      <div class="nav-item" onclick="showPage('promote')" data-page="promote">
+        <i class="fa-solid fa-arrow-up-right-dots"></i> Befördern / Degradieren
+      </div>
+
+      <div class="nav-section">Fahrzeuge</div>
+      <div class="nav-item" onclick="showPage('vehicles')" data-page="vehicles">
+        <i class="fa-solid fa-truck-fire"></i> Fahrzeugverwaltung
+      </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <main id="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-label">Online FW</div>
+            <div class="stat-value green" id="stat-online">0</div>
+          </div>
+          <div class="stat-box" style="--fire:#4a9eff">
+            <div class="stat-label">Im Dienst</div>
+            <div class="stat-value blue" id="stat-duty">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Aktive Einsätze</div>
+            <div class="stat-value fire" id="stat-callouts">0</div>
+          </div>
+          <div class="stat-box" style="--fire:#e03c3c">
+            <div class="stat-label">Gespawnte FZ</div>
+            <div class="stat-value red" id="stat-vehicles">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-fire"></i>
+            <span class="card-header-title">Aktive Einsätze (Live)</span>
+            <div class="card-header-spacer"></div>
+            <button class="btn btn-ghost btn-sm" onclick="refreshData()"><i class="fa-solid fa-rotate-right"></i></button>
+          </div>
+          <div class="card-body">
+            <div id="dash-callouts-list">
+              <div class="empty-state"><i class="fa-solid fa-check-circle"></i>Keine aktiven Einsätze</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-users"></i>
+            <span class="card-header-title">Feuerwehr Online</span>
+          </div>
+          <div class="card-body">
+            <div id="dash-players-list">
+              <div class="empty-state"><i class="fa-solid fa-user-slash"></i>Keine Feuerwehrleute online</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── AKTIVE EINSÄTZE ── -->
+      <div class="page" id="page-callouts">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-bell"></i>
+            <span class="card-header-title">Aktive Einsätze</span>
+            <div class="card-header-spacer"></div>
+            <button class="btn btn-ghost btn-sm" onclick="refreshData()"><i class="fa-solid fa-rotate-right"></i></button>
+          </div>
+          <div class="card-body" id="callouts-list">
+            <div class="empty-state"><i class="fa-solid fa-check-circle"></i>Keine aktiven Einsätze</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EINSATZ ERSTELLEN ── -->
+      <div class="page" id="page-create-callout">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-plus"></i>
+            <span class="card-header-title">Manuellen Einsatz erstellen</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Einsatz-Typ</label>
+                <select class="form-select" id="callout-type">
+                  <option value="house_fire">Hausbrand</option>
+                  <option value="car_fire">Fahrzeugbrand</option>
+                  <option value="wildfire">Waldbrand</option>
+                  <option value="gas_leak">Gasaustritt</option>
+                  <option value="accident">Verkehrsunfall</option>
+                  <option value="medical">Medizinischer Notfall</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bezeichnung</label>
+                <input class="form-input" id="callout-label" type="text" placeholder="z.B. Wohnungsbrand Vinewood">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Koordinate X</label>
+                <input class="form-input" id="callout-x" type="number" step="0.01" placeholder="0.0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Koordinate Y</label>
+                <input class="form-input" id="callout-y" type="number" step="0.01" placeholder="0.0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Koordinate Z</label>
+                <input class="form-input" id="callout-z" type="number" step="0.01" placeholder="0.0">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-fire" onclick="createCallout()">
+                <i class="fa-solid fa-paper-plane"></i> Einsatz auslösen
+              </button>
+              <button class="btn btn-ghost" onclick="getMyCoords()">
+                <i class="fa-solid fa-location-crosshairs"></i> Meine Position
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SPIELER ── -->
+      <div class="page" id="page-players">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-users"></i>
+            <span class="card-header-title">Feuerwehr Spieler</span>
+            <div class="card-header-spacer"></div>
+            <input class="form-input" id="player-search" style="width:160px;padding:4px 8px;font-size:10px;" placeholder="Suchen…" oninput="filterPlayers()">
+          </div>
+          <div class="card-body" id="players-list">
+            <div class="empty-state"><i class="fa-solid fa-user-slash"></i>Keine Spieler online</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DIENSTSTATUS ── -->
+      <div class="page" id="page-duty">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-clock"></i>
+            <span class="card-header-title">Dienststatus Übersicht</span>
+          </div>
+          <div class="card-body">
+            <table class="fd-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Server-ID</th>
+                  <th>Rang</th>
+                  <th>Status</th>
+                  <th>Aktion</th>
+                </tr>
+              </thead>
+              <tbody id="duty-table-body">
+                <tr><td colspan="5" class="empty-state">Keine Daten</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BEFÖRDERN / DEGRADIEREN ── -->
+      <div class="page" id="page-promote">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-arrow-up-right-dots"></i>
+            <span class="card-header-title">Rang verwalten</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Spieler (Server-ID)</label>
+                <select class="form-select" id="promote-player"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Neuer Rang</label>
+                <select class="form-select" id="promote-grade">
+                  <option value="0">0 – Rookie</option>
+                  <option value="1">1 – Feuerwehrmann</option>
+                  <option value="2">2 – Senior Feuerwehrmann</option>
+                  <option value="3">3 – Leutnant</option>
+                  <option value="4">4 – Hauptmann</option>
+                  <option value="5">5 – Feuerwehrchef</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-fire" onclick="promotePlayer()">
+                <i class="fa-solid fa-user-pen"></i> Rang setzen
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-list"></i>
+            <span class="card-header-title">Rangliste</span>
+          </div>
+          <div class="card-body">
+            <table class="fd-table">
+              <thead><tr><th>Name</th><th>Server-ID</th><th>Aktueller Rang</th><th>Im Dienst</th></tr></thead>
+              <tbody id="rank-table-body">
+                <tr><td colspan="4" class="empty-state">Keine Daten</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FAHRZEUGE ── -->
+      <div class="page" id="page-vehicles">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-truck-fire"></i>
+            <span class="card-header-title">Gespawnte Fahrzeuge</span>
+            <div class="card-header-spacer"></div>
+            <button class="btn btn-danger btn-sm" onclick="deleteAllVehicles()">
+              <i class="fa-solid fa-trash"></i> Alle löschen
+            </button>
+          </div>
+          <div class="card-body">
+            <table class="fd-table">
+              <thead>
+                <tr><th>Kennzeichen</th><th>Modell</th><th>Besitzer</th><th>Aktion</th></tr>
+              </thead>
+              <tbody id="vehicles-table-body">
+                <tr><td colspan="4" class="empty-state">Keine Fahrzeuge gespawnt</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ── STATE ────────────────────────────────────────
+let state = {
+  players: [],
+  callouts: [],
+  vehicles: [],
+};
+
+// ── NUI COMMUNICATION ────────────────────────────
+window.addEventListener('message', (e) => {
+  const { type, data } = e.data;
+  switch (type) {
+    case 'openPanel':  openPanel(data); break;
+    case 'closePanel': closePanel();    break;
+    case 'updateData': updateState(data); break;
+  }
+});
+
+function nuiPost(action, data = {}) {
+  fetch(`https://${GetParentResourceName()}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+// Fallback for dev/browser testing
+function GetParentResourceName() {
+  return 'qbx_firedepartmentjob';
+}
+
+// ── PANEL OPEN / CLOSE ───────────────────────────
+function openPanel(data) {
+  if (data) updateState(data);
+  document.getElementById('overlay').classList.add('visible');
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('visible');
+  nuiPost('closeAdminPanel');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePanel();
+});
+
+// ── NAVIGATION ───────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name)?.classList.add('active');
+  document.querySelector(`[data-page="${name}"]`)?.classList.add('active');
+}
+
+// ── STATE UPDATE & RENDER ─────────────────────────
+function updateState(data) {
+  if (data.players)  state.players  = data.players;
+  if (data.callouts) state.callouts = data.callouts;
+  if (data.vehicles) state.vehicles = data.vehicles;
+  renderAll();
+}
+
+function renderAll() {
+  renderStats();
+  renderDashboard();
+  renderCallouts();
+  renderPlayers();
+  renderDutyTable();
+  renderRankTable();
+  renderVehiclesTable();
+  renderPromoteSelect();
+  updateBadges();
+}
+
+// ── STATS ─────────────────────────────────────────
+function renderStats() {
+  const online  = state.players.length;
+  const onDuty  = state.players.filter(p => p.onDuty).length;
+  const calls   = state.callouts.length;
+  const vehs    = state.vehicles.length;
+  document.getElementById('stat-online').textContent   = online;
+  document.getElementById('stat-duty').textContent     = onDuty;
+  document.getElementById('stat-callouts').textContent = calls;
+  document.getElementById('stat-vehicles').textContent = vehs;
+}
+
+function updateBadges() {
+  document.getElementById('callout-badge').textContent = state.callouts.length;
+  document.getElementById('player-badge').textContent  = state.players.length;
+}
+
+// ── DASHBOARD ─────────────────────────────────────
+function renderDashboard() {
+  const calloutEl = document.getElementById('dash-callouts-list');
+  const playerEl  = document.getElementById('dash-players-list');
+
+  if (!state.callouts.length) {
+    calloutEl.innerHTML = `<div class="empty-state"><i class="fa-solid fa-check-circle"></i>Keine aktiven Einsätze</div>`;
+  } else {
+    calloutEl.innerHTML = state.callouts.slice(0, 4).map(calloutCard).join('');
+  }
+
+  if (!state.players.length) {
+    playerEl.innerHTML = `<div class="empty-state"><i class="fa-solid fa-user-slash"></i>Keine Feuerwehrleute online</div>`;
+  } else {
+    playerEl.innerHTML = state.players.slice(0, 4).map(playerCard).join('');
+  }
+}
+
+// ── CALLOUTS ──────────────────────────────────────
+function calloutCard(c) {
+  const prioClass = ['badge-prio1','badge-prio1','badge-prio2','badge-prio3'][c.priority] ?? 'badge-prio2';
+  const prioLabel = ['','NIEDRIG','MITTEL','HOCH'][c.priority] ?? 'MITTEL';
+  return `
+    <div class="callout-item">
+      <div class="callout-icon"><i class="fa-solid fa-fire"></i></div>
+      <div class="callout-info">
+        <div class="callout-title">${c.label}</div>
+        <div class="callout-meta">ID #${c.id} · ${c.location_label ?? ''} · Belohnung: $${c.reward}</div>
+      </div>
+      <span class="badge ${prioClass}">${prioLabel}</span>
+      <div class="callout-actions">
+        <button class="btn btn-danger btn-sm" onclick="cancelCallout(${c.id})">
+          <i class="fa-solid fa-xmark"></i> Abbrechen
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderCallouts() {
+  const el = document.getElementById('callouts-list');
+  el.innerHTML = state.callouts.length
+    ? state.callouts.map(calloutCard).join('')
+    : `<div class="empty-state"><i class="fa-solid fa-check-circle"></i>Keine aktiven Einsätze</div>`;
+}
+
+// ── PLAYERS ───────────────────────────────────────
+function playerCard(p) {
+  return `
+    <div class="player-card" data-name="${p.name.toLowerCase()}">
+      <div class="player-avatar"><i class="fa-solid fa-helmet-safety"></i></div>
+      <div class="player-info">
+        <div class="player-name">${p.name}</div>
+        <div class="player-meta">ID ${p.id} · ${p.gradeLabel ?? 'Unbekannt'}</div>
+      </div>
+      <span class="badge ${p.onDuty ? 'badge-on' : 'badge-off'}">${p.onDuty ? 'Im Dienst' : 'Außer Dienst'}</span>
+      <div class="player-actions">
+        <button class="btn btn-ghost btn-sm" onclick="kickPlayer(${p.id})">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderPlayers() {
+  const el = document.getElementById('players-list');
+  el.innerHTML = state.players.length
+    ? state.players.map(playerCard).join('')
+    : `<div class="empty-state"><i class="fa-solid fa-user-slash"></i>Keine Spieler online</div>`;
+}
+
+function filterPlayers() {
+  const q = document.getElementById('player-search').value.toLowerCase();
+  document.querySelectorAll('#players-list .player-card').forEach(card => {
+    card.style.display = card.dataset.name?.includes(q) ? '' : 'none';
+  });
+}
+
+// ── DUTY TABLE ────────────────────────────────────
+function renderDutyTable() {
+  const tbody = document.getElementById('duty-table-body');
+  if (!state.players.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Keine Daten</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = state.players.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td><span style="font-family:var(--mono);color:var(--muted)">${p.id}</span></td>
+      <td>${p.gradeLabel ?? '—'}</td>
+      <td><span class="badge ${p.onDuty ? 'badge-on' : 'badge-off'}">${p.onDuty ? 'Im Dienst' : 'Außer Dienst'}</span></td>
+      <td>
+        <button class="btn btn-${p.onDuty ? 'danger' : 'success'} btn-sm"
+          onclick="toggleDuty(${p.id}, ${!p.onDuty})">
+          <i class="fa-solid fa-${p.onDuty ? 'circle-stop' : 'circle-play'}"></i>
+          ${p.onDuty ? 'Abmelden' : 'Anmelden'}
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── RANK TABLE ────────────────────────────────────
+function renderRankTable() {
+  const tbody = document.getElementById('rank-table-body');
+  if (!state.players.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">Keine Daten</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = state.players.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td><span style="font-family:var(--mono);color:var(--muted)">${p.id}</span></td>
+      <td><span class="badge badge-fire">Grad ${p.grade ?? 0} · ${p.gradeLabel ?? '—'}</span></td>
+      <td><span class="badge ${p.onDuty ? 'badge-on' : 'badge-off'}">${p.onDuty ? 'Ja' : 'Nein'}</span></td>
+    </tr>`).join('');
+}
+
+function renderPromoteSelect() {
+  const sel = document.getElementById('promote-player');
+  sel.innerHTML = state.players.map(p =>
+    `<option value="${p.id}">${p.name} (ID ${p.id})</option>`
+  ).join('') || `<option value="">Keine Spieler online</option>`;
+}
+
+// ── VEHICLES TABLE ────────────────────────────────
+function renderVehiclesTable() {
+  const tbody = document.getElementById('vehicles-table-body');
+  if (!state.vehicles.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">Keine Fahrzeuge gespawnt</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = state.vehicles.map(v => `
+    <tr>
+      <td><span style="font-family:var(--mono)">${v.plate}</span></td>
+      <td>${v.model}</td>
+      <td>${v.owner}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.plate}')">
+          <i class="fa-solid fa-trash"></i> Löschen
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── ACTIONS ───────────────────────────────────────
+function refreshData() {
+  nuiPost('adminRefresh');
+  showToast('Daten werden aktualisiert…', 'info');
+}
+
+function createCallout() {
+  const type  = document.getElementById('callout-type').value;
+  const label = document.getElementById('callout-label').value || null;
+  const x = parseFloat(document.getElementById('callout-x').value);
+  const y = parseFloat(document.getElementById('callout-y').value);
+  const z = parseFloat(document.getElementById('callout-z').value);
+  if (isNaN(x) || isNaN(y) || isNaN(z)) { showToast('Bitte alle Koordinaten ausfüllen', 'error'); return; }
+  nuiPost('adminCreateCallout', { type, label, x, y, z });
+  showToast('Einsatz wurde ausgelöst!', 'info');
+}
+
+function cancelCallout(id) {
+  nuiPost('adminCancelCallout', { id });
+  showToast('Einsatz #' + id + ' abgebrochen', 'error');
+}
+
+function toggleDuty(playerId, newDuty) {
+  nuiPost('adminSetDuty', { playerId, duty: newDuty });
+  showToast('Dienststatus geändert', 'info');
+}
+
+function promotePlayer() {
+  const playerId = document.getElementById('promote-player').value;
+  const grade    = parseInt(document.getElementById('promote-grade').value);
+  if (!playerId) { showToast('Kein Spieler ausgewählt', 'error'); return; }
+  nuiPost('adminSetGrade', { playerId: parseInt(playerId), grade });
+  showToast('Rang wurde gesetzt', 'info');
+}
+
+function kickPlayer(playerId) {
+  nuiPost('adminKickFromDuty', { playerId });
+  showToast('Spieler aus Dienst entfernt', 'error');
+}
+
+function deleteVehicle(plate) {
+  nuiPost('adminDeleteVehicle', { plate });
+  showToast('Fahrzeug ' + plate + ' gelöscht', 'error');
+}
+
+function deleteAllVehicles() {
+  nuiPost('adminDeleteAllVehicles');
+  showToast('Alle Fahrzeuge gelöscht', 'error');
+}
+
+function getMyCoords() {
+  nuiPost('adminGetCoords');
+}
+
+// ── COORDS CALLBACK ───────────────────────────────
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'setCoords') {
+    document.getElementById('callout-x').value = e.data.x.toFixed(2);
+    document.getElementById('callout-y').value = e.data.y.toFixed(2);
+    document.getElementById('callout-z').value = e.data.z.toFixed(2);
+    showToast('Position übernommen', 'info');
+  }
+});
+
+// ── CLOCK ─────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('server-time').textContent =
+    now.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── TOAST ─────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const icons = { success: 'check-circle', error: 'circle-xmark', info: 'circle-info' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fa-solid fa-${icons[type]}"></i> ${msg}`;
+  document.getElementById('toast-container').appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+</script>
+</body>
+</html>

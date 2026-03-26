@@ -1,0 +1,18 @@
+{
+    "duty_on":          "Du bist jetzt im Dienst",
+    "duty_off":         "Du bist nicht mehr im Dienst",
+    "no_permission":    "Keine Berechtigung",
+    "paycheck":         "Gehalt erhalten: $%s",
+    "new_callout":      "Neuer Einsatz: %s",
+    "callout_accepted": "Einsatz angenommen – Route gesetzt",
+    "callout_done":     "Einsatz abgeschlossen – Belohnung: $%s",
+    "hose_on":          "Schlauch aktiviert",
+    "hose_off":         "Schlauch deaktiviert",
+    "no_hose":          "Kein Feuerwehrschlauch im Inventar",
+    "revive_success":   "Spieler erfolgreich reanimiert",
+    "revive_fail":      "Reanimation fehlgeschlagen",
+    "no_defib":         "Kein Defibrillator vorhanden",
+    "vehicle_spawned":  "Fahrzeug bereit – Kennzeichen: %s",
+    "vehicle_returned": "Fahrzeug zurückgegeben",
+    "no_vehicle_near":  "Kein Fahrzeug in der Nähe"
+}
