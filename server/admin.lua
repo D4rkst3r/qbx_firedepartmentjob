@@ -75,6 +75,13 @@ RegisterNetEvent('qbx_firedepartmentjob:server:RequestAdminPanel', function()
         callouts = callouts,
         vehicles = GetVehiclesData(),
     })
+
+    -- Fahrzeuge nochmal nach kurzem Delay senden (sicherstellen dass Panel offen ist)
+    SetTimeout(500, function()
+        TriggerClientEvent('qbx_firedepartmentjob:client:AdminUpdateData', src, {
+            vehicles = GetVehiclesData(),
+        })
+    end)
 end)
 
 -- ──────────────────────────────────────────
@@ -120,12 +127,23 @@ RegisterNetEvent('qbx_firedepartmentjob:server:AdminCancelCallout', function(cal
     local src = source
     if not IsAdmin(src) then return end
 
+    -- Aus ActiveCallouts entfernen
+    if ActiveCallouts[calloutId] then
+        ActiveCallouts[calloutId] = nil
+        MySQL.update('UPDATE fd_callouts SET completed = 1, completed_at = NOW() WHERE callout_id = ?', { calloutId })
+    end
+
+    -- Alle Clients informieren
     local players = GetPlayers()
     for _, player in pairs(players) do
         if IsFirefighter(player.PlayerData.job) then
             TriggerClientEvent('qbx_firedepartmentjob:client:RemoveCallout', player.PlayerData.source, calloutId)
         end
     end
+
+    TriggerClientEvent('ox_lib:notify', src, {
+        title = '🚨 Einsatz abgebrochen', description = 'Einsatz #' .. calloutId .. ' wurde abgebrochen.', type = 'success',
+    })
 end)
 
 -- ──────────────────────────────────────────
@@ -235,11 +253,27 @@ end)
 
 AddEventHandler('qbx_firedepartmentjob:server:RegisterVehicle', function(plate, model, ownerName, netId)
     trackedVehicles[plate] = { model = model, ownerName = ownerName, netId = netId }
+    -- Admin-Panels live updaten
+    PushVehicleUpdate()
 end)
 
 AddEventHandler('qbx_firedepartmentjob:server:UnregisterVehicle', function(plate)
     trackedVehicles[plate] = nil
+    -- Admin-Panels live updaten
+    PushVehicleUpdate()
 end)
+
+-- Live-Update an alle offenen Admin-Panels schicken
+function PushVehicleUpdate()
+    local players = GetPlayers()
+    for _, player in pairs(players) do
+        if IsPlayerAceAllowed(player.PlayerData.source, ADMIN_ACE) then
+            TriggerClientEvent('qbx_firedepartmentjob:client:AdminUpdateData', player.PlayerData.source, {
+                vehicles = GetVehiclesData(),
+            })
+        end
+    end
+end
 
 --[[
     server.cfg:

@@ -114,6 +114,9 @@ RegisterNetEvent('qbx_firedepartmentjob:server:SpawnVehicle', function(data)
     local name  = (state and state.firstname and (state.firstname .. ' ' .. state.lastname)) or ('Spieler ' .. src)
     TriggerEvent('qbx_firedepartmentjob:server:RegisterVehicle', data.plate, data.model, name, netId)
 
+    -- Schlüssel geben (qbx_vehiclekeys) - server-seitig mit Entity
+    exports.qbx_vehiclekeys:GiveKeys(src, veh, true)
+
     TriggerClientEvent('qbx_firedepartmentjob:client:VehicleSpawned', src, netId, data.plate)
 end)
 

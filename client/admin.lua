@@ -79,12 +79,15 @@ end)
 
 -- Meine Position holen und ans UI schicken
 RegisterNUICallback('adminGetCoords', function(_, cb)
-    local coords = GetEntityCoords(PlayerPedId())
+    local ped    = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
     SendNUIMessage({
         type = 'setCoords',
         x    = coords.x,
         y    = coords.y,
         z    = coords.z,
+        w    = heading,
     })
     cb('ok')
 end)
@@ -161,4 +164,51 @@ RegisterNetEvent('qbx_firedepartmentjob:client:UpdateHoseConfig', function(maxDi
     Config.Hose.MaxDistance   = maxDistance
     Config.Hose.WaterPressure = waterPressure
     DebugLog('admin.lua', 'Schlauch-Config aktualisiert: %dm / %.1f', maxDistance, waterPressure)
+end)
+
+-- Fahrzeug-Spawn update empfangen
+RegisterNetEvent('qbx_firedepartmentjob:client:UpdateVehicleSpawn', function(stationId, spawnIdx, data)
+    if Config.VehicleSpawns[stationId] and Config.VehicleSpawns[stationId][spawnIdx] then
+        local spawn = Config.VehicleSpawns[stationId][spawnIdx]
+        if data.model  then spawn.model  = data.model  end
+        if data.label  then spawn.label  = data.label  end
+        if data.coords then
+            spawn.coords = vector4(data.coords.x, data.coords.y, data.coords.z, data.coords.w)
+        end
+        DebugLog('admin.lua', 'VehicleSpawn %d/%d aktualisiert', stationId, spawnIdx)
+    end
+end)
+
+-- ──────────────────────────────────────────
+-- ERWEITERTE CONFIG CALLBACKS
+-- ──────────────────────────────────────────
+
+RegisterNUICallback('adminGetFullConfig', function(_, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:GetFullConfig')
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetVehicleSpawn', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetVehicleSpawn',
+        data.stationId, data.spawnIdx, data)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetAmbulanceConfig', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetAmbulanceConfig', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetCalloutConfig', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetCalloutConfig', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetEquipmentGrade', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetEquipmentGrade', data.item, data.grade)
+    cb('ok')
+end)
+
+RegisterNetEvent('qbx_firedepartmentjob:client:ReceiveFullConfig', function(data)
+    SendNUIMessage({ type = 'receiveFullConfig', data = data })
 end)

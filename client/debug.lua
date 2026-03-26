@@ -56,14 +56,39 @@ CreateThread(function()
         for i, station in pairs(Config.Stations) do
             local dist = #(coords - vector3(station.coords.x, station.coords.y, station.coords.z))
             if dist < 60.0 then
-                -- Koordinaten über dem Marker in der Welt
                 DrawText3D(
                     station.coords.x,
                     station.coords.y,
                     station.coords.z + 2.0,
-                    string.format('~o~Wache %d~n~~w~%.1f / %.1f / %.1f~n~Dist: ~y~%.1fm',
-                        i, station.coords.x, station.coords.y, station.coords.z, dist)
+                    string.format('~o~Wache %d~n~~w~%.1f / %.1f / %.1f~n~Heading: ~y~%.1f~n~Dist: ~y~%.1fm',
+                        i, station.coords.x, station.coords.y, station.coords.z, station.coords.w, dist)
                 )
+            end
+        end
+
+        -- Fahrzeug-Spawn Koordinaten
+        for stationId, spawns in pairs(Config.VehicleSpawns) do
+            for spawnIdx, spawn in ipairs(spawns) do
+                local dist = #(coords - vector3(spawn.coords.x, spawn.coords.y, spawn.coords.z))
+                if dist < 40.0 then
+                    DrawText3D(
+                        spawn.coords.x,
+                        spawn.coords.y,
+                        spawn.coords.z + 1.5,
+                        string.format('~b~🚒 %s~n~~w~%.1f / %.1f / %.1f~n~Heading: ~y~%.1f~n~Dist: ~y~%.1fm',
+                            spawn.label, spawn.coords.x, spawn.coords.y, spawn.coords.z, spawn.coords.w, dist)
+                    )
+
+                    -- Kleiner Marker am Spawnpunkt
+                    DrawMarker(
+                        1,
+                        spawn.coords.x, spawn.coords.y, spawn.coords.z - 0.1,
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        1.0, 1.0, 0.3,
+                        0, 100, 255, 80,
+                        false, true, 2, false, nil, nil, false
+                    )
+                end
             end
         end
 

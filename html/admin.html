@@ -737,6 +737,22 @@ html, body {
           <div class="card-header"><i class="fa-solid fa-location-dot"></i><span class="card-header-title">Wachen-Koordinaten</span></div>
           <div class="card-body" id="station-editor"></div>
         </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-truck-fire"></i><span class="card-header-title">Fahrzeug-Spawns</span></div>
+          <div class="card-body" id="vehicle-spawn-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-heart-pulse"></i><span class="card-header-title">Ambulanz-Einstellungen</span></div>
+          <div class="card-body" id="ambulance-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-bell"></i><span class="card-header-title">Einsatz-Einstellungen</span></div>
+          <div class="card-body" id="callout-config-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-box-open"></i><span class="card-header-title">Ausrüstungs-Grades</span></div>
+          <div class="card-body" id="equipment-editor"></div>
+        </div>
       </div>
 
       <!-- ── DEBUG ── -->
@@ -1058,14 +1074,35 @@ function getMyCoords() {
 }
 
 // ── COORDS CALLBACK ───────────────────────────────
+let _posTarget = null;
+
 window.addEventListener('message', (e) => {
   if (e.data.type === 'setCoords') {
-    document.getElementById('callout-x').value = e.data.x.toFixed(2);
-    document.getElementById('callout-y').value = e.data.y.toFixed(2);
-    document.getElementById('callout-z').value = e.data.z.toFixed(2);
+    if (_posTarget) {
+      // Config editor target (station or vehicle spawn)
+      const xEl = document.getElementById(_posTarget + '-x');
+      const yEl = document.getElementById(_posTarget + '-y');
+      const zEl = document.getElementById(_posTarget + '-z');
+      const wEl = document.getElementById(_posTarget + '-w');
+      if (xEl) xEl.value = e.data.x.toFixed(2);
+      if (yEl) yEl.value = e.data.y.toFixed(2);
+      if (zEl) zEl.value = e.data.z.toFixed(2);
+      if (wEl) wEl.value = (e.data.w || 0.0).toFixed(1);
+      _posTarget = null;
+    } else {
+      // Callout erstellen
+      document.getElementById('callout-x').value = e.data.x.toFixed(2);
+      document.getElementById('callout-y').value = e.data.y.toFixed(2);
+      document.getElementById('callout-z').value = e.data.z.toFixed(2);
+    }
     showToast('Position übernommen', 'info');
   }
 });
+
+function getPosFor(prefix) {
+  _posTarget = prefix;
+  nuiPost('adminGetCoords');
+}
 
 // ── CLOCK ─────────────────────────────────────────
 function updateClock() {
@@ -1086,9 +1123,16 @@ window.addEventListener('message', (e) => {
     renderConfigEditors();
     updateDebugBadge(configState.debug);
   }
+  if (e.data.type === 'receiveFullConfig') {
+    Object.assign(configState, e.data.data);
+    renderFullConfigEditors();
+  }
 });
 
-function requestConfig() { nuiPost('adminGetConfig'); }
+function requestConfig() {
+  nuiPost('adminGetConfig');
+  nuiPost('adminGetFullConfig');
+}
 
 function renderConfigEditors() {
   const gradeNames = ['Rookie','Feuerwehrmann','Senior','Leutnant','Hauptmann','Chef'];
@@ -1147,11 +1191,157 @@ function renderConfigEditors() {
           <div class="form-group"><label class="form-label">Y</label><input class="form-input" type="number" step="0.01" id="st${id}-y" value="${s.y.toFixed(2)}"></div>
           <div class="form-group"><label class="form-label">Z</label><input class="form-input" type="number" step="0.01" id="st${id}-z" value="${s.z.toFixed(2)}"></div>
           <div class="form-group"><label class="form-label">Heading</label><input class="form-input" type="number" step="0.1" id="st${id}-w" value="${s.w.toFixed(1)}"></div>
-          <div class="form-group" style="flex:0 0 110px;justify-content:flex-end">
+          <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 110px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="getPosFor('st${id}')"><i class="fa-solid fa-location-crosshairs"></i> Position</button>
             <button class="btn btn-fire btn-sm" onclick="saveStation(${id})"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
           </div>
         </div>
       </div>`).join('');
+}
+
+
+function renderFullConfigEditors() {
+  // Fahrzeug-Spawns
+  const vsEl = document.getElementById('vehicle-spawn-editor');
+  if (vsEl && configState.vehicleSpawns) {
+    let html = '';
+    Object.entries(configState.vehicleSpawns).forEach(([stId, spawns]) => {
+      spawns.forEach((sp, idx) => {
+        html += `<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+          <div class="form-label" style="margin-bottom:8px">Wache ${stId} · Spawn ${idx+1} · ${sp.label}</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Modell</label>
+              <input class="form-input" id="vs${stId}-${idx}-model" value="${sp.model}"></div>
+            <div class="form-group"><label class="form-label">Label</label>
+              <input class="form-input" id="vs${stId}-${idx}-label" value="${sp.label}"></div>
+          </div>
+          <div class="form-row" style="margin-top:8px">
+            <div class="form-group"><label class="form-label">X</label>
+              <input class="form-input" type="number" step="0.01" id="vs${stId}-${idx}-x" value="${sp.x.toFixed(2)}"></div>
+            <div class="form-group"><label class="form-label">Y</label>
+              <input class="form-input" type="number" step="0.01" id="vs${stId}-${idx}-y" value="${sp.y.toFixed(2)}"></div>
+            <div class="form-group"><label class="form-label">Z</label>
+              <input class="form-input" type="number" step="0.01" id="vs${stId}-${idx}-z" value="${sp.z.toFixed(2)}"></div>
+            <div class="form-group"><label class="form-label">Heading</label>
+              <input class="form-input" type="number" step="0.1" id="vs${stId}-${idx}-w" value="${sp.w.toFixed(1)}"></div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 110px;justify-content:flex-end">
+              <button class="btn btn-ghost btn-sm" onclick="getPosFor('vs'+${stId}+'-'+${idx})"><i class="fa-solid fa-location-crosshairs"></i> Position</button>
+              <button class="btn btn-fire btn-sm" onclick="saveVehicleSpawn(${stId},${idx})">
+                <i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+            </div>
+          </div>
+        </div>`;
+      });
+    });
+    vsEl.innerHTML = html || '<div class="empty-state">Keine Fahrzeug-Spawns</div>';
+  }
+
+  // Ambulanz
+  const ambEl = document.getElementById('ambulance-editor');
+  if (ambEl && configState.ambulance) {
+    const a = configState.ambulance;
+    ambEl.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Reanimationszeit (ms)</label>
+          <input class="form-input" type="number" id="amb-revivetime" value="${a.reviveTime}" min="1000" max="30000" step="500">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mindestrang Reanimation</label>
+          <select class="form-select" id="amb-revivegrade">
+            ${[0,1,2,3,4,5].map(g => `<option value="${g}" ${a.reviveGrade==g?'selected':''}>${g}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reichweite (m)</label>
+          <input class="form-input" type="number" id="amb-revivedist" value="${a.reviveDistance}" min="1" max="10" step="0.5">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;align-items:center">
+        <div class="form-group" style="flex:0 0 auto">
+          <label class="form-label">EMS benachrichtigen</label>
+          <select class="form-select" id="amb-notifyems" style="width:120px">
+            <option value="true" ${a.notifyEMS?'selected':''}>AN</option>
+            <option value="false" ${!a.notifyEMS?'selected':''}>AUS</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0 0 auto;justify-content:flex-end">
+          <button class="btn btn-fire" onclick="saveAmbulance()" style="margin-top:14px">
+            <i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+        </div>
+      </div>`;
+  }
+
+  // Callout-Einstellungen
+  const coEl = document.getElementById('callout-config-editor');
+  if (coEl && configState.callouts) {
+    const c = configState.callouts;
+    coEl.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Max. aktive Einsätze</label>
+          <input class="form-input" type="number" id="co-maxactive" value="${c.maxActive}" min="1" max="20">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alert-Sound</label>
+          <select class="form-select" id="co-alertsound">
+            <option value="true" ${c.alertSound?'selected':''}>AN</option>
+            <option value="false" ${!c.alertSound?'selected':''}>AUS</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0 0 130px;justify-content:flex-end">
+          <button class="btn btn-fire" onclick="saveCalloutConfig()" style="margin-top:14px">
+            <i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+        </div>
+      </div>`;
+  }
+
+  // Equipment-Grades
+  const eqEl = document.getElementById('equipment-editor');
+  if (eqEl && configState.equipment) {
+    eqEl.innerHTML = configState.equipment.map(eq => `
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group" style="flex:0 0 200px">
+          <label class="form-label">${eq.label}</label>
+        </div>
+        <div class="form-group" style="flex:0 0 150px">
+          <select class="form-select" onchange="saveEquipmentGrade('${eq.item}', this.value)">
+            ${[0,1,2,3,4,5].map(g => `<option value="${g}" ${eq.grade==g?'selected':''}>Grad ${g}</option>`).join('')}
+          </select>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function saveVehicleSpawn(stId, idx) {
+  const model = document.getElementById(`vs${stId}-${idx}-model`).value;
+  const label = document.getElementById(`vs${stId}-${idx}-label`).value;
+  const x = parseFloat(document.getElementById(`vs${stId}-${idx}-x`).value);
+  const y = parseFloat(document.getElementById(`vs${stId}-${idx}-y`).value);
+  const z = parseFloat(document.getElementById(`vs${stId}-${idx}-z`).value);
+  const w = parseFloat(document.getElementById(`vs${stId}-${idx}-w`).value);
+  nuiPost('adminSetVehicleSpawn', { stationId: stId, spawnIdx: idx+1, model, label, coords: {x,y,z,w} });
+  showToast(`Spawn ${stId}/${idx+1} gespeichert`, 'success');
+}
+function saveAmbulance() {
+  nuiPost('adminSetAmbulanceConfig', {
+    reviveTime:     parseInt(document.getElementById('amb-revivetime').value),
+    reviveGrade:    parseInt(document.getElementById('amb-revivegrade').value),
+    reviveDistance: parseFloat(document.getElementById('amb-revivedist').value),
+    notifyEMS:      document.getElementById('amb-notifyems').value === 'true',
+  });
+  showToast('Ambulanz-Einstellungen gespeichert', 'success');
+}
+function saveCalloutConfig() {
+  nuiPost('adminSetCalloutConfig', {
+    maxActive:  parseInt(document.getElementById('co-maxactive').value),
+    alertSound: document.getElementById('co-alertsound').value === 'true',
+  });
+  showToast('Einsatz-Einstellungen gespeichert', 'success');
+}
+function saveEquipmentGrade(item, grade) {
+  nuiPost('adminSetEquipmentGrade', { item, grade: parseInt(grade) });
+  showToast(item + ' → Grad ' + grade, 'success');
 }
 
 function savePaycheck(grade, amount) {
