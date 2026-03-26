@@ -1,142 +1,136 @@
 -- ╔══════════════════════════════════════════╗
--- ║         CLIENT / CALLOUTS.LUA           ║
+-- ║        SERVER / CALLOUTS.LUA            ║
 -- ╚══════════════════════════════════════════╝
 
-local activeCallouts  = {}     -- { [id] = { blip, data } }
-local acceptedCallout = nil    -- Derzeit angenommener Einsatz
+local function GetPlayer(src) return exports.qbx_core:GetPlayer(src) end
+local function GetPlayers()   return exports.qbx_core:GetQBPlayers()   end
+
+ActiveCallouts = {}
+local calloutIdCounter = 0
 
 -- ──────────────────────────────────────────
--- NEUER EINSATZ (vom Server)
+-- EINSATZ ERSTELLEN
 -- ──────────────────────────────────────────
 
-RegisterNetEvent('qbx_firedepartmentjob:client:NewCallout', function(callout)
-    local playerData = exports.qbx_core:GetPlayerData()
-    if not IsFirefighter(playerData.job) then return end
+local function CreateCallout(typeKey, locationData)
+    if #ActiveCallouts >= Config.Callouts.MaxActiveCallouts then return end
 
-    -- Alert-Sound
-    if Config.Callouts.AlertSound then
-        PlaySoundFrontend(-1, 'TIMER_STOP', 'HUD_MINI_GAME_SOUNDSET', true)
-    end
+    calloutIdCounter += 1
+    local calloutType = Config.Callouts.Types[typeKey]
+    if not calloutType then return end
 
-    -- Blip erstellen
-    local blip = AddBlipForCoord(callout.coords.x, callout.coords.y, callout.coords.z)
-    SetBlipSprite(blip, Config.Callouts.BlipSprite)
-    SetBlipColour(blip, Config.Callouts.BlipColor)
-    SetBlipScale(blip, 0.9)
-    SetBlipDisplay(blip, 4)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString('🔥 ' .. callout.label)
-    EndTextCommandSetBlipName(blip)
+    local callout = {
+        id             = calloutIdCounter,
+        type           = typeKey,
+        type_label     = calloutType.label,
+        label          = calloutType.label,
+        location_label = locationData.label,
+        coords         = locationData.coords,
+        priority       = calloutType.priority,
+        reward         = calloutType.reward,
+        assignedTo     = {},
+        completed      = false,
+        createdAt      = os.time(),
+    }
 
-    activeCallouts[callout.id] = { blip = blip, data = callout }
+    ActiveCallouts[callout.id] = callout
 
-    -- Benachrichtigung mit Einsatzdetails
-    lib.notify({
-        title       = '🚨 Neuer Einsatz!',
-        description = string.format('[%s] %s\nPriorität: %d',
-            callout.type_label, callout.label, callout.priority),
-        type        = 'warning',
-        duration    = 10000,
-        position    = 'top',
+    MySQL.insert('INSERT INTO fd_callouts (callout_id, type, label, coords_x, coords_y, coords_z, priority, reward, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())', {
+        callout.id, callout.type, callout.label,
+        callout.coords.x, callout.coords.y, callout.coords.z,
+        callout.priority, callout.reward
     })
 
-    -- Einsatz-Dialog anzeigen
-    local accepted = lib.alertDialog({
-        header  = '🚨 ' .. callout.label,
-        content = string.format('**Typ:** %s\n**Priorität:** %d\n**Ort:** %s\n**Belohnung:** $%d',
-            callout.type_label, callout.priority, callout.location_label, callout.reward),
-        centered = true,
-        cancel   = true,
-        labels   = { confirm = 'Einsatz annehmen', cancel = 'Ablehnen' },
-    })
+    local players = GetPlayers()
+    for _, player in pairs(players) do
+        if IsFirefighter(player.PlayerData.job) then
+            TriggerClientEvent('qbx_firedepartmentjob:client:NewCallout', player.PlayerData.source, callout)
+        end
+    end
 
-    if accepted == 'confirm' then
-        TriggerServerEvent('qbx_firedepartmentjob:server:AcceptCallout', callout.id)
-        SetGpsPlayerBlipEnabled(true)
-        SetNewWaypoint(callout.coords.x, callout.coords.y)
-        acceptedCallout = callout
+    print(string.format('[FD] Neuer Einsatz #%d: %s bei %s', callout.id, callout.label, callout.location_label))
+    return callout
+end
 
-        lib.notify({
-            title       = '✅ Einsatz angenommen',
-            description = 'Route zu ' .. callout.label .. ' gesetzt.',
-            type        = 'success',
-        })
+-- ──────────────────────────────────────────
+-- ZUFÄLLIGE EINSÄTZE
+-- ──────────────────────────────────────────
+
+CreateThread(function()
+    while true do
+        Wait(math.random(3, 8) * 60 * 1000)
+        if #ActiveCallouts < Config.Callouts.MaxActiveCallouts then
+            local loc = Config.Callouts.Locations[math.random(#Config.Callouts.Locations)]
+            CreateCallout(loc.type, loc)
+        end
     end
 end)
 
 -- ──────────────────────────────────────────
--- EINSATZ ABGESCHLOSSEN
+-- EINSATZ ANNEHMEN
 -- ──────────────────────────────────────────
 
-RegisterNetEvent('qbx_firedepartmentjob:client:CalloutCompleted', function(calloutId, reward)
-    if activeCallouts[calloutId] then
-        RemoveBlip(activeCallouts[calloutId].blip)
-        activeCallouts[calloutId] = nil
-    end
+RegisterNetEvent('qbx_firedepartmentjob:server:AcceptCallout', function(calloutId)
+    local src    = source
+    local Player = GetPlayer(src)
+    if not Player then return end
+    if not IsFirefighter(Player.PlayerData.job) then return end
 
-    if acceptedCallout and acceptedCallout.id == calloutId then
-        acceptedCallout = nil
-    end
+    local callout = ActiveCallouts[calloutId]
+    if not callout or callout.completed then return end
 
-    lib.notify({
-        title       = '✅ Einsatz abgeschlossen',
-        description = 'Belohnung: $' .. reward,
-        type        = 'success',
-        duration    = 7000,
-    })
+    callout.assignedTo[#callout.assignedTo + 1] = src
 end)
 
 -- ──────────────────────────────────────────
--- EINSATZ ABGEBROCHEN / ENTFERNT
+-- EINSATZ ABSCHLIESSEN
 -- ──────────────────────────────────────────
 
-RegisterNetEvent('qbx_firedepartmentjob:client:RemoveCallout', function(calloutId)
-    if activeCallouts[calloutId] then
-        RemoveBlip(activeCallouts[calloutId].blip)
-        activeCallouts[calloutId] = nil
+RegisterNetEvent('qbx_firedepartmentjob:server:CompleteCallout', function(calloutId)
+    local src    = source
+    local Player = GetPlayer(src)
+    if not Player then return end
+
+    local callout = ActiveCallouts[calloutId]
+    if not callout or callout.completed then return end
+
+    callout.completed = true
+
+    for _, playerId in ipairs(callout.assignedTo) do
+        local assignedPlayer = GetPlayer(playerId)
+        if assignedPlayer then
+            assignedPlayer.Functions.AddMoney('bank', callout.reward, 'callout-reward')
+            TriggerClientEvent('qbx_firedepartmentjob:client:CalloutCompleted', playerId, calloutId, callout.reward)
+        end
+    end
+
+    MySQL.update('UPDATE fd_callouts SET completed = 1, completed_at = NOW() WHERE callout_id = ?', { calloutId })
+    ActiveCallouts[calloutId] = nil
+
+    local players = GetPlayers()
+    for _, player in pairs(players) do
+        if IsFirefighter(player.PlayerData.job) then
+            TriggerClientEvent('qbx_firedepartmentjob:client:RemoveCallout', player.PlayerData.source, calloutId)
+        end
     end
 end)
 
 -- ──────────────────────────────────────────
--- EINSATZ-ÜBERSICHT (Menü)
+-- MANUELLER EINSATZ
 -- ──────────────────────────────────────────
 
-RegisterNetEvent('qbx_firedepartmentjob:client:ViewCallouts', function()
-    if not next(activeCallouts) then
-        lib.notify({ title = '📡 Einsätze', description = 'Keine aktiven Einsätze.', type = 'inform' })
-        return
-    end
+RegisterNetEvent('qbx_firedepartmentjob:server:CreateManualCallout', function(typeKey, coords, label)
+    local src    = source
+    local Player = GetPlayer(src)
+    if not Player then return end
+    if not HasRequiredGrade(Player.PlayerData.job, 4) then return end
 
-    local options = {}
-    for id, callout in pairs(activeCallouts) do
-        options[#options + 1] = {
-            title       = '🔥 ' .. callout.data.label,
-            description = string.format('Typ: %s | Prio: %d | Belohnung: $%d',
-                callout.data.type_label, callout.data.priority, callout.data.reward),
-            icon        = 'location-dot',
-            onSelect    = function()
-                SetNewWaypoint(callout.data.coords.x, callout.data.coords.y)
-                lib.notify({ title = 'GPS', description = 'Route gesetzt.', type = 'inform' })
-            end,
-        }
-    end
-
-    lib.registerContext({
-        id      = 'fd_callout_list',
-        title   = '📡 Aktive Einsätze (' .. #options .. ')',
-        options = options,
-    })
-    lib.showContext('fd_callout_list')
+    CreateCallout(typeKey, { coords = coords, label = label or 'Manueller Einsatz' })
 end)
 
 -- ──────────────────────────────────────────
--- EINSATZ MANUELL ABSCHLIESSEN
+-- EXPORTS
 -- ──────────────────────────────────────────
 
-RegisterNetEvent('qbx_firedepartmentjob:client:CompleteCurrentCallout', function()
-    if not acceptedCallout then
-        lib.notify({ title = 'Fehler', description = 'Kein aktiver Einsatz.', type = 'error' })
-        return
-    end
-    TriggerServerEvent('qbx_firedepartmentjob:server:CompleteCallout', acceptedCallout.id)
-end)
+exports('CreateCallout', CreateCallout)
+exports('GetActiveCallouts', function() return ActiveCallouts end)

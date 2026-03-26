@@ -67,7 +67,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:RequestAdminPanel', function()
     end
 
     local callouts = {}
-    local raw = exports.qbx_firedepartmentjob:GetActiveCallouts()
+    local raw = ActiveCallouts
     for _, c in pairs(raw) do callouts[#callouts + 1] = c end
 
     TriggerClientEvent('qbx_firedepartmentjob:client:OpenAdminPanel', src, {
@@ -86,7 +86,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:AdminRefresh', function()
     if not IsAdmin(src) then return end
 
     local callouts = {}
-    local raw = exports.qbx_firedepartmentjob:GetActiveCallouts()
+    local raw = ActiveCallouts
     for _, c in pairs(raw) do callouts[#callouts + 1] = c end
 
     TriggerClientEvent('qbx_firedepartmentjob:client:AdminUpdateData', src, {
