@@ -218,12 +218,19 @@ RegisterNetEvent('qbx_firedepartmentjob:server:AdminDeleteVehicle', function(pla
 
     if trackedVehicles[plate] then
         local netId = trackedVehicles[plate].netId
-        if NetworkDoesEntityExistWithNetworkId(netId) then
-            local veh = NetworkGetEntityFromNetworkId(netId)
-            if DoesEntityExist(veh) then DeleteEntity(veh) end
-        end
+        local veh = NetworkGetEntityFromNetworkId(netId)
+        if DoesEntityExist(veh) then DeleteEntity(veh) end
+        -- Alle Clients informieren damit spawnedVehicles aufgeräumt wird
+        TriggerClientEvent('qbx_firedepartmentjob:client:VehicleDeleted', -1, plate)
         trackedVehicles[plate] = nil
+    else
+        -- Fahrzeug nicht im Tracking → trotzdem Clients informieren
+        TriggerClientEvent('qbx_firedepartmentjob:client:VehicleDeleted', -1, plate)
     end
+
+    TriggerClientEvent('ox_lib:notify', src, {
+        title = 'Fahrzeug', description = 'Fahrzeug ' .. plate .. ' gelöscht.', type = 'success',
+    })
 end)
 
 -- ──────────────────────────────────────────
@@ -235,10 +242,9 @@ RegisterNetEvent('qbx_firedepartmentjob:server:AdminDeleteAllVehicles', function
     if not IsAdmin(src) then return end
 
     for plate, v in pairs(trackedVehicles) do
-        if NetworkDoesEntityExistWithNetworkId(v.netId) then
-            local veh = NetworkGetEntityFromNetworkId(v.netId)
-            if DoesEntityExist(veh) then DeleteEntity(veh) end
-        end
+        local veh = NetworkGetEntityFromNetworkId(v.netId)
+        if DoesEntityExist(veh) then DeleteEntity(veh) end
+        TriggerClientEvent('qbx_firedepartmentjob:client:VehicleDeleted', -1, plate)
     end
     trackedVehicles = {}
 

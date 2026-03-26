@@ -54,6 +54,20 @@ RegisterNetEvent('qbx_firedepartmentjob:client:VehicleSpawned', function(netId, 
 end)
 
 -- ──────────────────────────────────────────
+-- ADMIN: FAHRZEUG GELÖSCHT
+-- ──────────────────────────────────────────
+
+RegisterNetEvent('qbx_firedepartmentjob:client:VehicleDeleted', function(plate)
+    for i, v in ipairs(spawnedVehicles) do
+        if v.plate == plate then
+            table.remove(spawnedVehicles, i)
+            lib.notify({ title = 'Fahrzeug', description = 'Fahrzeug ' .. plate .. ' wurde vom Admin entfernt.', type = 'error' })
+            return
+        end
+    end
+end)
+
+-- ──────────────────────────────────────────
 -- FAHRZEUG ZURÜCKGEBEN
 -- ──────────────────────────────────────────
 
@@ -86,12 +100,14 @@ function GeneratePlate()
     local numbers = '0123456789'
     local plate   = 'FW'
     for _ = 1, 2 do
-        plate = plate .. chars:sub(math.random(1, #chars), math.random(1, #chars))
+        local i = math.random(1, #chars)
+        plate = plate .. chars:sub(i, i)
     end
     for _ = 1, 4 do
-        plate = plate .. numbers:sub(math.random(1, #numbers), math.random(1, #numbers))
+        local i = math.random(1, #numbers)
+        plate = plate .. numbers:sub(i, i)
     end
-    return plate
+    return plate  -- Format: FWXX0000 (8 Zeichen)
 end
 
 -- ──────────────────────────────────────────

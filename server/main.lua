@@ -125,8 +125,8 @@ end)
 -- ──────────────────────────────────────────
 
 RegisterNetEvent('qbx_firedepartmentjob:server:ReturnVehicle', function(netId)
-    if not NetworkDoesEntityExistWithNetworkId(netId) then return end
     local veh = NetworkGetEntityFromNetworkId(netId)
+    if not DoesEntityExist(veh) then return end
     if DoesEntityExist(veh) then
         local plate = GetVehicleNumberPlateText(veh)
         TriggerEvent('qbx_firedepartmentjob:server:UnregisterVehicle', plate)
