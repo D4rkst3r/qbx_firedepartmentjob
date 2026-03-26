@@ -108,7 +108,6 @@ RegisterNetEvent('qbx_firedepartmentjob:server:SpawnVehicle', function(data)
     end
 
     SetVehicleNumberPlateText(veh, data.plate)
-    SetEntityAsMissionEntity(veh, true, true)
 
     local netId = NetworkGetNetworkIdFromEntity(veh)
     local state = Player.PlayerData.charinfo
@@ -197,7 +196,10 @@ end)
 -- ──────────────────────────────────────────
 
 RegisterNetEvent('qbx_firedepartmentjob:server:SetOutfit', function(outfitName)
-    TriggerClientEvent('qb-clothing:client:loadOutfit', source, outfitName)
+    local src = source
+    -- bostra_appearance: Outfits werden client-seitig über den Outfit-Namen geladen
+    -- Der Client sucht das Outfit aus der bostra_appearance Datenbank
+    TriggerClientEvent('qbx_firedepartmentjob:client:ApplyOutfit', src, outfitName)
 end)
 
 -- ──────────────────────────────────────────

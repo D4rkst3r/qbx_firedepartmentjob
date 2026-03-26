@@ -13,7 +13,43 @@ local paycheckTimer = nil
 -- INITIALISIERUNG
 -- ──────────────────────────────────────────
 
+-- Blips immer für alle Spieler setzen (Wachen sichtbar auf Karte)
+local stationBlips = {}
+
+local function CreateStationBlips()
+    -- Alte Blips entfernen falls vorhanden
+    for _, blip in ipairs(stationBlips) do
+        if DoesBlipExist(blip) then RemoveBlip(blip) end
+    end
+    stationBlips = {}
+
+    for _, station in pairs(Config.Stations) do
+        local blip = AddBlipForCoord(station.coords.x, station.coords.y, station.coords.z)
+        SetBlipSprite(blip, station.blip.sprite)
+        SetBlipDisplay(blip, 4)
+        SetBlipScale(blip, station.blip.scale)
+        SetBlipColour(blip, station.blip.color)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString(station.label)
+        EndTextCommandSetBlipName(blip)
+        stationBlips[#stationBlips + 1] = blip
+    end
+end
+
+-- Resource gestartet während Spieler bereits eingeloggt ist
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    Wait(500)
+    CreateStationBlips()
+    PlayerJob = GetPlayerData().job
+    if IsFirefighter(PlayerJob) then
+        SetupFirefighterJob()
+    end
+end)
+
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
+    CreateStationBlips()
     PlayerJob = GetPlayerData().job
     if IsFirefighter(PlayerJob) then
         SetupFirefighterJob()
@@ -34,18 +70,6 @@ end)
 -- ──────────────────────────────────────────
 
 function SetupFirefighterJob()
-    for _, station in pairs(Config.Stations) do
-        local blip = AddBlipForCoord(station.coords.x, station.coords.y, station.coords.z)
-        SetBlipSprite(blip, station.blip.sprite)
-        SetBlipDisplay(blip, 4)
-        SetBlipScale(blip, station.blip.scale)
-        SetBlipColour(blip, station.blip.color)
-        SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(station.label)
-        EndTextCommandSetBlipName(blip)
-    end
-
     TriggerEvent('qbx_firedepartmentjob:client:RegisterTargets')
 
     if Config.Paycheck.Enabled and isOnDuty then

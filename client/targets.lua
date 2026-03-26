@@ -29,7 +29,7 @@ function RegisterStationTargets()
                         return IsFirefighter(GetPlayerData().job)
                     end,
                     onSelect = function()
-                        TriggerNetEvent('qbx_firedepartmentjob:client:OpenMainMenu')
+                        TriggerEvent('qbx_firedepartmentjob:client:OpenMainMenu')
                     end,
                 },
                 {
@@ -41,7 +41,7 @@ function RegisterStationTargets()
                         return IsFirefighter(GetPlayerData().job)
                     end,
                     onSelect = function()
-                        TriggerNetEvent('qbx_firedepartmentjob:client:OpenCloakroom')
+                        TriggerEvent('qbx_firedepartmentjob:client:OpenCloakroom')
                     end,
                 },
             },
@@ -117,6 +117,16 @@ RegisterNetEvent('qbx_firedepartmentjob:client:OpenCloakroom', function()
         },
     })
     lib.showContext('fd_cloakroom')
+end)
+
+-- ──────────────────────────────────────────
+-- OUTFIT ANWENDEN (bostra_appearance)
+-- ──────────────────────────────────────────
+
+RegisterNetEvent('qbx_firedepartmentjob:client:ApplyOutfit', function(outfitName)
+    -- bostra_appearance: Outfit per gespeichertem Namen laden
+    -- Outfit muss in bostra_appearance unter diesem Namen gespeichert sein
+    TriggerEvent('bostra_appearance:client:loadOutfit', outfitName)
 end)
 
 -- ──────────────────────────────────────────

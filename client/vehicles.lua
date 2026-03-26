@@ -50,6 +50,9 @@ RegisterNetEvent('qbx_firedepartmentjob:client:VehicleSpawned', function(netId, 
     SetVehicleNumberPlateText(veh, plate)
     spawnedVehicles[#spawnedVehicles + 1] = { netId = netId, plate = plate }
 
+    -- Schlüssel geben (qbx_vehiclekeys)
+    exports.qbx_vehiclekeys:addKey(plate)
+
     lib.notify({ title = '🚒 Fahrzeug bereit', description = 'Kennzeichen: ' .. plate, type = 'success' })
 end)
 
@@ -130,7 +133,7 @@ RegisterNetEvent('qbx_firedepartmentjob:client:OpenVehicleMenu', function()
         title    = '↩️ Fahrzeug zurückgeben',
         icon     = 'rotate-left',
         onSelect = function()
-            TriggerNetEvent('qbx_firedepartmentjob:client:ReturnVehicle')
+            TriggerEvent('qbx_firedepartmentjob:client:ReturnVehicle')
         end,
     }
 

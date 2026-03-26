@@ -52,7 +52,6 @@ RegisterNetEvent('qbx_firedepartmentjob:client:NewCallout', function(callout)
 
     if accepted == 'confirm' then
         TriggerServerEvent('qbx_firedepartmentjob:server:AcceptCallout', callout.id)
-        SetGpsPlayerBlipEnabled(true)
         SetNewWaypoint(callout.coords.x, callout.coords.y)
         acceptedCallout = callout
 

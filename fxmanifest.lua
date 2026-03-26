@@ -47,4 +47,5 @@ dependencies {
     'ox_inventory',
     'ox_target',
     'oxmysql',
+    'qbx_vehiclekeys',  -- neu
 }
