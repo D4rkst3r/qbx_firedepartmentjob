@@ -79,6 +79,16 @@ RegisterNetEvent('qbx_firedepartmentjob:client:AddStorageLocation', function(sto
     lib.notify({ title = '📦 Lager', description = 'Neues Lager verfügbar: ' .. storage.label, type = 'inform' })
 end)
 
+RegisterNetEvent('qbx_firedepartmentjob:client:UpdateStorageLocation', function(storageId, data)
+    local storage = Config.Storage.Locations[storageId]
+    if not storage then return end
+    storage.label  = data.label or storage.label
+    storage.coords = vector4(data.coords.x, data.coords.y, data.coords.z, data.coords.w or 0)
+    -- Target-Zone mit neuen Koordinaten neu registrieren
+    RegisterStorageTarget(storageId, storage)
+    DebugLog('storage', 'Lager %d Coords/Label aktualisiert', storageId)
+end)
+
 RegisterNetEvent('qbx_firedepartmentjob:client:RemoveStorageLocation', function(storageId)
     if storageTargets[storageId] then
         exports.ox_target:removeZone(storageTargets[storageId])

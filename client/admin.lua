@@ -257,6 +257,12 @@ end)
 
 -- Lager-Items werden direkt über ox_inventory UI verwaltet (kein NUI-Callback nötig)
 
+-- Lager bearbeiten (Name + Koordinaten)
+RegisterNUICallback('adminUpdateStorage', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminUpdateStorage', data)
+    cb('ok')
+end)
+
 -- Vollständige Config für Station/Storage Tab
 RegisterNUICallback('adminGetStationStorageConfig', function(_, cb)
     local stations = {}

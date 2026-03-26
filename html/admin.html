@@ -1639,21 +1639,90 @@ function renderStoragesList() {
     return;
   }
   el.innerHTML = entries.map(([id, stor]) => {
-    return `<div class="callout-item" style="margin-bottom:8px">
-      <div class="callout-icon"><i class="fa-solid fa-box-open"></i></div>
-      <div class="callout-info">
-        <div class="callout-title">Lager ${id} · ${stor.label}</div>
-        <div class="callout-meta">
-          x:${(stor.x||0).toFixed(2)} y:${(stor.y||0).toFixed(2)} z:${(stor.z||0).toFixed(2)} · Inhalt über ox_inventory verwaltbar
-        </div>
+    return `<div class="card" style="margin-bottom:10px;overflow:visible">
+      <div class="card-header" style="cursor:pointer" onclick="toggleStorageEdit(${id})">
+        <i class="fa-solid fa-box-open" style="color:var(--fire)"></i>
+        <span class="card-header-title">Lager ${id} · ${stor.label}</span>
+        <div class="card-header-spacer"></div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">
+          x:${(stor.x||0).toFixed(1)} y:${(stor.y||0).toFixed(1)} z:${(stor.z||0).toFixed(1)}
+        </span>
+        <i class="fa-solid fa-chevron-down" id="stor-chevron-${id}" style="margin-left:10px;font-size:10px;color:var(--muted);transition:transform .2s"></i>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteStorage(${id},'${stor.label}')">
-          <i class="fa-solid fa-trash"></i> Löschen
-        </button>
+      <div id="stor-edit-${id}" style="display:none;padding:14px;display:none;flex-direction:column;gap:12px">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input class="form-input" id="stor-${id}-label" type="text" value="${stor.label}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">X</label>
+            <input class="form-input" type="number" step="0.01" id="stor-${id}-x" value="${(stor.x||0).toFixed(2)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Y</label>
+            <input class="form-input" type="number" step="0.01" id="stor-${id}-y" value="${(stor.y||0).toFixed(2)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Z</label>
+            <input class="form-input" type="number" step="0.01" id="stor-${id}-z" value="${(stor.z||0).toFixed(2)}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Heading</label>
+            <input class="form-input" type="number" step="0.1" id="stor-${id}-w" value="${(stor.w||0).toFixed(1)}">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 110px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="getPosFor('stor-${id}')">
+              <i class="fa-solid fa-location-crosshairs"></i> Position
+            </button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-fire btn-sm" onclick="saveStorageEdit(${id})">
+            <i class="fa-solid fa-floppy-disk"></i> Speichern
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDeleteStorage(${id},'${stor.label}')">
+            <i class="fa-solid fa-trash"></i> Löschen
+          </button>
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted)">
+          Stash-ID: fd_storage_${id} · Inhalt direkt im ox_inventory Stash befüllbar
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+let openStorageEdits = {};
+function toggleStorageEdit(id) {
+  const el = document.getElementById('stor-edit-' + id);
+  const ch = document.getElementById('stor-chevron-' + id);
+  if (!el) return;
+  const isOpen = openStorageEdits[id];
+  openStorageEdits[id] = !isOpen;
+  el.style.display = isOpen ? 'none' : 'flex';
+  if (ch) ch.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function saveStorageEdit(id) {
+  const label = document.getElementById('stor-' + id + '-label').value;
+  const x = parseFloat(document.getElementById('stor-' + id + '-x').value);
+  const y = parseFloat(document.getElementById('stor-' + id + '-y').value);
+  const z = parseFloat(document.getElementById('stor-' + id + '-z').value);
+  const w = parseFloat(document.getElementById('stor-' + id + '-w').value) || 0;
+  if (!label || isNaN(x) || isNaN(y) || isNaN(z)) { showToast('Alle Felder ausfüllen!', 'error'); return; }
+  nuiPost('adminUpdateStorage', { storageId: id, label, x, y, z, w });
+  // Lokalen State updaten
+  if (ssConfig.storages[id]) {
+    ssConfig.storages[id].label = label;
+    ssConfig.storages[id].x = x;
+    ssConfig.storages[id].y = y;
+    ssConfig.storages[id].z = z;
+    ssConfig.storages[id].w = w;
+  }
+  showToast('Lager ' + id + ' gespeichert', 'success');
 }
 
 function addStorage() {

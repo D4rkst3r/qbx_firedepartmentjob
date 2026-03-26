@@ -178,6 +178,41 @@ function SaveStorageConfig(storageId)
     MySQL.update('INSERT INTO fd_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', { 'storage_' .. storageId, j, j })
 end
 
+
+-- ──────────────────────────────────────────
+-- ADMIN: LAGER BEARBEITEN
+-- ──────────────────────────────────────────
+
+RegisterNetEvent('qbx_firedepartmentjob:server:AdminUpdateStorage', function(data)
+    local src = source
+    if not IsPlayerAceAllowed(src, ADMIN_ACE) then return end
+
+    local storageId = tonumber(data.storageId)
+    local storage   = Config.Storage.Locations[storageId]
+    if not storage then return end
+
+    storage.label  = data.label or storage.label
+    storage.coords = vector4(
+        tonumber(data.x) or storage.coords.x,
+        tonumber(data.y) or storage.coords.y,
+        tonumber(data.z) or storage.coords.z,
+        tonumber(data.w) or storage.coords.w
+    )
+
+    SaveStorageConfig(storageId)
+
+    -- Clients über geänderte Koordinaten informieren
+    TriggerClientEvent('qbx_firedepartmentjob:client:UpdateStorageLocation', -1, storageId, {
+        label  = storage.label,
+        coords = { x = storage.coords.x, y = storage.coords.y, z = storage.coords.z, w = storage.coords.w },
+    })
+
+    TriggerClientEvent('ox_lib:notify', src, {
+        title = '📦 Lager', description = 'Lager ' .. storageId .. ' aktualisiert.', type = 'success',
+    })
+    DebugLog('storage', 'Admin %d hat Lager %d bearbeitet', src, storageId)
+end)
+
 AddEventHandler('qbx_firedepartmentjob:server:LoadStorageConfigs', function(rows)
     for _, row in ipairs(rows) do
         if row.key:sub(1, 8) == 'storage_' then
