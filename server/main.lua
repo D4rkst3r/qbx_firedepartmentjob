@@ -17,10 +17,12 @@ RegisterNetEvent('qbx_firedepartmentjob:server:ToggleDuty', function()
     local job = Player.PlayerData.job
     if not IsFirefighter(job) then return end
 
-    local currentDuty = Player.PlayerData.metadata.duty or false
+    -- QBX speichert Duty-Status in job.onDuty (nach SetJobDuty)
+    -- Fallback auf metadata.duty für Rückwärtskompatibilität
+    local currentDuty = Player.PlayerData.job.onDuty or Player.PlayerData.metadata.duty or false
     local newDuty     = not currentDuty
 
-    Player.Functions.SetMetaData('duty', newDuty)
+    exports.qbx_core:SetJobDuty(src, newDuty)
     TriggerClientEvent('qbx_firedepartmentjob:client:SetDuty', src, newDuty)
 end)
 

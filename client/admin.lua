@@ -156,6 +156,8 @@ RegisterNetEvent('qbx_firedepartmentjob:client:UpdateStationCoords', function(st
     if Config.Stations[stationId] then
         Config.Stations[stationId].coords = vector4(coords.x, coords.y, coords.z, coords.w)
         DebugLog('admin.lua', 'Wache %d Coords aktualisiert', stationId)
+        -- Blips neu setzen damit sie an der richtigen Position sind
+        CreateStationBlips()
     end
 end)
 

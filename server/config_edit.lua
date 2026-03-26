@@ -95,7 +95,42 @@ end
 CreateThread(function()
     Wait(500) -- kurz warten bis MySQL bereit ist
     LoadAllConfigs()
+    -- Clients holen die Config selbst per RequestClientConfig
 end)
+
+local function SendConfigToClient(src)
+    -- Wachen-Koordinaten
+    for stationId, station in pairs(Config.Stations) do
+        TriggerClientEvent('qbx_firedepartmentjob:client:UpdateStationCoords', src, stationId, {
+            x = station.coords.x, y = station.coords.y,
+            z = station.coords.z, w = station.coords.w,
+        })
+    end
+
+    -- Fahrzeug-Spawns
+    for stationId, spawns in pairs(Config.VehicleSpawns) do
+        for spawnIdx, spawn in ipairs(spawns) do
+            TriggerClientEvent('qbx_firedepartmentjob:client:UpdateVehicleSpawn', src, stationId, spawnIdx, {
+                model  = spawn.model,
+                label  = spawn.label,
+                coords = { x = spawn.coords.x, y = spawn.coords.y, z = spawn.coords.z, w = spawn.coords.w },
+            })
+        end
+    end
+
+    -- Schlauch
+    TriggerClientEvent('qbx_firedepartmentjob:client:UpdateHoseConfig', src,
+        Config.Hose.MaxDistance, Config.Hose.WaterPressure)
+end
+
+function BroadcastConfigToClients()
+    -- GetPlayers() (native) gibt Liste von Server-IDs zurück
+    local sources = GetPlayers()
+    for _, src in ipairs(sources) do
+        SendConfigToClient(tonumber(src))
+    end
+    DebugLog('config_edit', 'Config an %d Clients gesendet', #sources)
+end
 
 -- ──────────────────────────────────────────
 -- AKTUELLE CONFIG SENDEN

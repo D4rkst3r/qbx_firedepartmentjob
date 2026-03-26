@@ -46,6 +46,9 @@ AddEventHandler('onResourceStart', function(resourceName)
     if IsFirefighter(PlayerJob) then
         SetupFirefighterJob()
     end
+    -- DB-Config vom Server holen (nach Restart sind Coords evtl. aus DB geladen)
+    Wait(1000)
+    TriggerServerEvent('qbx_firedepartmentjob:server:RequestClientConfig')
 end)
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
@@ -54,6 +57,9 @@ AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
     if IsFirefighter(PlayerJob) then
         SetupFirefighterJob()
     end
+    -- DB-Config laden
+    Wait(500)
+    TriggerServerEvent('qbx_firedepartmentjob:server:RequestClientConfig')
 end)
 
 AddEventHandler('QBCore:Client:OnJobUpdate', function(jobInfo)
