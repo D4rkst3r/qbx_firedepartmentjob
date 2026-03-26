@@ -4,13 +4,14 @@ lua54 'yes'
 
 name        'qbx_firedepartmentjob'
 description 'Feuerwehr Job Script für QBX Framework'
-author      'YourName'
+author      'D4rkst3r'
 version     '1.0.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
     'shared/config.lua',
     'shared/functions.lua',
+    'shared/debug.lua',
 }
 
 client_scripts {
@@ -21,6 +22,7 @@ client_scripts {
     'client/ambulance.lua',
     'client/targets.lua',
     'client/admin.lua',
+    'client/debug.lua',
 }
 
 server_scripts {
@@ -29,6 +31,7 @@ server_scripts {
     'server/callouts.lua',
     'server/vehicles.lua',
     'server/admin.lua',
+    'server/config_edit.lua',
 }
 
 files {

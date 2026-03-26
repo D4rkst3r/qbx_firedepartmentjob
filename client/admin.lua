@@ -108,3 +108,57 @@ RegisterCommand('fdadmin', function()
 end, false)
 
 TriggerEvent('chat:addSuggestion', '/fdadmin', 'Feuerwehr Admin-Panel öffnen')
+
+-- ──────────────────────────────────────────
+-- CONFIG CALLBACKS
+-- ──────────────────────────────────────────
+
+RegisterNUICallback('adminGetConfig', function(_, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:GetConfig')
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetPaycheck', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetPaycheck', data.grade, data.amount)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetCalloutReward', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetCalloutReward', data.typeKey, data.reward)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetHoseConfig', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetHoseConfig', data.maxDistance, data.waterPressure)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetStationCoords', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetStationCoords', data.stationId, data.coords)
+    cb('ok')
+end)
+
+RegisterNUICallback('adminSetDebug', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:SetDebug', data.state)
+    cb('ok')
+end)
+
+-- Config vom Server empfangen → ans NUI weiterleiten
+RegisterNetEvent('qbx_firedepartmentjob:client:ReceiveConfig', function(data)
+    SendNUIMessage({ type = 'receiveConfig', data = data })
+end)
+
+-- Wachen-Coords update empfangen
+RegisterNetEvent('qbx_firedepartmentjob:client:UpdateStationCoords', function(stationId, coords)
+    if Config.Stations[stationId] then
+        Config.Stations[stationId].coords = vector4(coords.x, coords.y, coords.z, coords.w)
+        DebugLog('admin.lua', 'Wache %d Coords aktualisiert', stationId)
+    end
+end)
+
+-- Schlauch-Config update empfangen
+RegisterNetEvent('qbx_firedepartmentjob:client:UpdateHoseConfig', function(maxDistance, waterPressure)
+    Config.Hose.MaxDistance   = maxDistance
+    Config.Hose.WaterPressure = waterPressure
+    DebugLog('admin.lua', 'Schlauch-Config aktualisiert: %dm / %.1f', maxDistance, waterPressure)
+end)

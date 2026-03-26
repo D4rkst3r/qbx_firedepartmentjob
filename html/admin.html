@@ -475,6 +475,14 @@ html, body {
         <i class="fa-solid fa-arrow-up-right-dots"></i> Befördern / Degradieren
       </div>
 
+      <div class="nav-section">System</div>
+      <div class="nav-item" onclick="showPage('config'); requestConfig()" data-page="config">
+        <i class="fa-solid fa-gear"></i> Config Editor
+      </div>
+      <div class="nav-item" onclick="showPage('debug'); requestConfig()" data-page="debug">
+        <i class="fa-solid fa-bug"></i> Debug
+      </div>
+
       <div class="nav-section">Fahrzeuge</div>
       <div class="nav-item" onclick="showPage('vehicles')" data-page="vehicles">
         <i class="fa-solid fa-truck-fire"></i> Fahrzeugverwaltung
@@ -707,6 +715,50 @@ html, body {
                 <tr><td colspan="4" class="empty-state">Keine Fahrzeuge gespawnt</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CONFIG EDITOR ── -->
+      <div class="page" id="page-config">
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-coins"></i><span class="card-header-title">Gehalt pro Rang</span></div>
+          <div class="card-body" id="paycheck-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-fire"></i><span class="card-header-title">Einsatz-Belohnungen</span></div>
+          <div class="card-body" id="callout-reward-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-droplet"></i><span class="card-header-title">Schlauch-Einstellungen</span></div>
+          <div class="card-body" id="hose-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-location-dot"></i><span class="card-header-title">Wachen-Koordinaten</span></div>
+          <div class="card-body" id="station-editor"></div>
+        </div>
+      </div>
+
+      <!-- ── DEBUG ── -->
+      <div class="page" id="page-debug">
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-bug"></i><span class="card-header-title">Debug-Modus</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">STATUS:</span>
+              <span class="badge" id="debug-status-badge">UNBEKANNT</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-success" onclick="setDebug(true)"><i class="fa-solid fa-play"></i> Debug AN</button>
+              <button class="btn btn-danger"  onclick="setDebug(false)"><i class="fa-solid fa-stop"></i> Debug AUS</button>
+            </div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8">
+              Debug AN zeigt:<br>
+              · ox_target Zonen (grüne Outlines)<br>
+              · Marker-Koordinaten über Wachen<br>
+              · Job/Grade Info oben links<br>
+              · Script-Logs in Server/Client Console
+            </div>
           </div>
         </div>
       </div>
@@ -1023,6 +1075,120 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
+
+
+// ── CONFIG STATE ──────────────────────────────
+let configState = { paycheck: {}, calloutRewards: {}, stations: {}, hose: {}, debug: false };
+
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'receiveConfig') {
+    configState = e.data.data;
+    renderConfigEditors();
+    updateDebugBadge(configState.debug);
+  }
+});
+
+function requestConfig() { nuiPost('adminGetConfig'); }
+
+function renderConfigEditors() {
+  const gradeNames = ['Rookie','Feuerwehrmann','Senior','Leutnant','Hauptmann','Chef'];
+
+  // Gehalt
+  document.getElementById('paycheck-editor').innerHTML =
+    Object.entries(configState.paycheck).map(([g, amt]) => `
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group" style="flex:0 0 180px">
+          <label class="form-label">Grad ${g} · ${gradeNames[g]||'?'}</label>
+        </div>
+        <div class="form-group">
+          <input class="form-input" type="number" value="${amt}" min="0" max="99999"
+            onchange="savePaycheck(${g}, this.value)">
+        </div>
+      </div>`).join('');
+
+  // Einsatz-Belohnungen
+  const calloutLabels = {house_fire:'Hausbrand',car_fire:'Fahrzeugbrand',wildfire:'Waldbrand',gas_leak:'Gasaustritt',accident:'Unfall',medical:'Notfall'};
+  document.getElementById('callout-reward-editor').innerHTML =
+    Object.entries(configState.calloutRewards).map(([k, r]) => `
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group" style="flex:0 0 180px">
+          <label class="form-label">${calloutLabels[k]||k}</label>
+        </div>
+        <div class="form-group">
+          <input class="form-input" type="number" value="${r}" min="0" max="99999"
+            onchange="saveCalloutReward('${k}', this.value)">
+        </div>
+      </div>`).join('');
+
+  // Schlauch
+  const h = configState.hose;
+  document.getElementById('hose-editor').innerHTML = `
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Max. Reichweite (m)</label>
+        <input class="form-input" type="number" id="hose-dist" value="${h.maxDistance||15}" min="1" max="50">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wasserdruck</label>
+        <input class="form-input" type="number" id="hose-pressure" value="${h.waterPressure||5}" min="1" max="20" step="0.5">
+      </div>
+      <div class="form-group" style="flex:0 0 130px;justify-content:flex-end">
+        <button class="btn btn-fire" onclick="saveHose()"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+      </div>
+    </div>`;
+
+  // Wachen
+  document.getElementById('station-editor').innerHTML =
+    Object.entries(configState.stations).map(([id, s]) => `
+      <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+        <div class="form-label" style="margin-bottom:8px">Wache ${id} · ${s.label}</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">X</label><input class="form-input" type="number" step="0.01" id="st${id}-x" value="${s.x.toFixed(2)}"></div>
+          <div class="form-group"><label class="form-label">Y</label><input class="form-input" type="number" step="0.01" id="st${id}-y" value="${s.y.toFixed(2)}"></div>
+          <div class="form-group"><label class="form-label">Z</label><input class="form-input" type="number" step="0.01" id="st${id}-z" value="${s.z.toFixed(2)}"></div>
+          <div class="form-group"><label class="form-label">Heading</label><input class="form-input" type="number" step="0.1" id="st${id}-w" value="${s.w.toFixed(1)}"></div>
+          <div class="form-group" style="flex:0 0 110px;justify-content:flex-end">
+            <button class="btn btn-fire btn-sm" onclick="saveStation(${id})"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+          </div>
+        </div>
+      </div>`).join('');
+}
+
+function savePaycheck(grade, amount) {
+  nuiPost('adminSetPaycheck', { grade: parseInt(grade), amount: parseInt(amount) });
+  showToast('Gehalt Grad ' + grade + ' → $' + amount, 'success');
+}
+function saveCalloutReward(typeKey, reward) {
+  nuiPost('adminSetCalloutReward', { typeKey, reward: parseInt(reward) });
+  showToast(typeKey + ' Belohnung → $' + reward, 'success');
+}
+function saveHose() {
+  const d = parseFloat(document.getElementById('hose-dist').value);
+  const p = parseFloat(document.getElementById('hose-pressure').value);
+  nuiPost('adminSetHoseConfig', { maxDistance: d, waterPressure: p });
+  showToast('Schlauch-Einstellungen gespeichert', 'success');
+}
+function saveStation(id) {
+  const x = parseFloat(document.getElementById('st'+id+'-x').value);
+  const y = parseFloat(document.getElementById('st'+id+'-y').value);
+  const z = parseFloat(document.getElementById('st'+id+'-z').value);
+  const w = parseFloat(document.getElementById('st'+id+'-w').value);
+  nuiPost('adminSetStationCoords', { stationId: id, coords: {x,y,z,w} });
+  showToast('Wache ' + id + ' gespeichert', 'success');
+}
+function setDebug(state) {
+  nuiPost('adminSetDebug', { state });
+  updateDebugBadge(state);
+  showToast('Debug-Modus: ' + (state ? 'AN' : 'AUS'), state ? 'success' : 'error');
+}
+function updateDebugBadge(state) {
+  const el = document.getElementById('debug-status-badge');
+  if (!el) return;
+  el.className = 'badge ' + (state ? 'badge-on' : 'badge-off');
+  el.textContent = state ? 'AN' : 'AUS';
+}
+
+// Config Tab öffnen → Daten laden (requestConfig direkt in onclick)
 
 // ── TOAST ─────────────────────────────────────────
 function showToast(msg, type = 'info') {
