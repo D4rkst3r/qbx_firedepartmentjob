@@ -34,8 +34,8 @@ local function GetFirefightersData()
             result[#result + 1] = {
                 id         = player.PlayerData.source,
                 name       = (charinfo and charinfo.firstname .. ' ' .. charinfo.lastname) or ('Spieler ' .. player.PlayerData.source),
-                grade      = job.grade,
-                gradeLabel = gradeLabels[job.grade] or 'Unbekannt',
+                grade      = job.grade.level,
+                gradeLabel = gradeLabels[job.grade.level] or 'Unbekannt',
                 onDuty     = player.PlayerData.metadata.duty or false,
             }
         end
