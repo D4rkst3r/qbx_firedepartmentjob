@@ -180,3 +180,46 @@ function StartPaycheckTimer()
         end
     end)
 end
+
+-- ──────────────────────────────────────────
+-- MARKER AN WACHEN
+-- ──────────────────────────────────────────
+
+CreateThread(function()
+    while true do
+        local ped    = PlayerPedId()
+        local coords = GetEntityCoords(ped)
+        local nearby = false
+
+        for _, station in pairs(Config.Stations) do
+            local dist = #(coords - vector3(station.coords.x, station.coords.y, station.coords.z))
+
+            if dist < 30.0 then
+                nearby = true
+                -- Haupt-Marker (Boden)
+                DrawMarker(
+                    1,                                          -- Typ: Zylinder
+                    station.coords.x, station.coords.y, station.coords.z - 0.1,
+                    0.0, 0.0, 0.0,                             -- Richtung
+                    0.0, 0.0, 0.0,                             -- Rotation
+                    1.5, 1.5, 0.5,                             -- Größe
+                    255, 106, 0, 120,                          -- Farbe (Orange, leicht transparent)
+                    false, true, 2, false, nil, nil, false
+                )
+
+                -- Pfeil oben drüber
+                DrawMarker(
+                    25,                                        -- Typ: Pfeil nach unten
+                    station.coords.x, station.coords.y, station.coords.z + 1.2,
+                    0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0,
+                    0.4, 0.4, 0.4,
+                    255, 106, 0, 200,
+                    false, true, 2, false, nil, nil, false
+                )
+            end
+        end
+
+        Wait(nearby and 0 or 500)
+    end
+end)
