@@ -16,7 +16,7 @@ local paycheckTimer = nil
 -- Blips immer für alle Spieler setzen (Wachen sichtbar auf Karte)
 local stationBlips = {}
 
-local function CreateStationBlips()
+function CreateStationBlips()
     -- Alte Blips entfernen falls vorhanden
     for _, blip in ipairs(stationBlips) do
         if DoesBlipExist(blip) then RemoveBlip(blip) end
@@ -40,26 +40,31 @@ end
 -- Resource gestartet während Spieler bereits eingeloggt ist
 AddEventHandler('onResourceStart', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
-    Wait(500)
-    CreateStationBlips()
-    PlayerJob = GetPlayerData().job
-    if IsFirefighter(PlayerJob) then
-        SetupFirefighterJob()
-    end
-    -- DB-Config vom Server holen (nach Restart sind Coords evtl. aus DB geladen)
-    Wait(1000)
-    TriggerServerEvent('qbx_firedepartmentjob:server:RequestClientConfig')
+    CreateThread(function()
+        Wait(500)
+        CreateStationBlips()
+        PlayerJob = GetPlayerData().job
+        if IsFirefighter(PlayerJob) then
+            SetupFirefighterJob()
+        end
+        -- DB-Config vom Server holen (nach Restart sind Coords evtl. aus DB geladen)
+        Wait(1000)
+        TriggerServerEvent('qbx_firedepartmentjob:server:RequestClientConfig')
+    end)
 end)
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
-    CreateStationBlips()
-    PlayerJob = GetPlayerData().job
-    if IsFirefighter(PlayerJob) then
-        SetupFirefighterJob()
-    end
-    -- DB-Config laden
-    Wait(500)
-    TriggerServerEvent('qbx_firedepartmentjob:server:RequestClientConfig')
+    CreateThread(function()
+        Wait(200)
+        CreateStationBlips()
+        PlayerJob = GetPlayerData().job
+        if IsFirefighter(PlayerJob) then
+            SetupFirefighterJob()
+        end
+        -- DB-Config laden
+        Wait(500)
+        TriggerServerEvent('qbx_firedepartmentjob:server:RequestClientConfig')
+    end)
 end)
 
 AddEventHandler('QBCore:Client:OnJobUpdate', function(jobInfo)
@@ -252,4 +257,13 @@ CreateThread(function()
 
         Wait(nearby and 0 or 500)
     end
+end)
+
+-- ──────────────────────────────────────────
+-- GESUNDHEIT HINZUFÜGEN (vom Server)
+-- ──────────────────────────────────────────
+
+RegisterNetEvent('qbx_firedepartmentjob:client:AddHealth', function(amount)
+    local ped = PlayerPedId()
+    SetEntityHealth(ped, math.min(200, GetEntityHealth(ped) + amount))
 end)

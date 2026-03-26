@@ -487,6 +487,14 @@ html, body {
       <div class="nav-item" onclick="showPage('vehicles')" data-page="vehicles">
         <i class="fa-solid fa-truck-fire"></i> Fahrzeugverwaltung
       </div>
+
+      <div class="nav-section">Standorte</div>
+      <div class="nav-item" onclick="showPage('stations'); loadStationStorageConfig()" data-page="stations">
+        <i class="fa-solid fa-fire-station"></i> Wachen verwalten
+      </div>
+      <div class="nav-item" onclick="showPage('storage'); loadStationStorageConfig()" data-page="storage">
+        <i class="fa-solid fa-box-open"></i> Lager verwalten
+      </div>
     </nav>
 
     <!-- CONTENT -->
@@ -779,6 +787,126 @@ html, body {
         </div>
       </div>
 
+
+      <!-- ── WACHEN VERWALTEN ── -->
+      <div class="page" id="page-stations">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-fire-station"></i>
+            <span class="card-header-title">Neue Wache anlegen</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Name der Wache</label>
+                <input class="form-input" id="new-station-label" type="text" placeholder="z.B. Feuerwache 3 – Paleto">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">X</label><input class="form-input" type="number" step="0.01" id="new-station-x" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Y</label><input class="form-input" type="number" step="0.01" id="new-station-y" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Z</label><input class="form-input" type="number" step="0.01" id="new-station-z" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Heading</label><input class="form-input" type="number" step="0.1" id="new-station-w" placeholder="0.0"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 110px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-sm" onclick="getPosFor('new-station')"><i class="fa-solid fa-location-crosshairs"></i> Position</button>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-fire" onclick="addStation()"><i class="fa-solid fa-plus"></i> Wache anlegen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-list"></i>
+            <span class="card-header-title">Bestehende Wachen</span>
+            <div class="card-header-spacer"></div>
+            <button class="btn btn-ghost btn-sm" onclick="loadStationStorageConfig()"><i class="fa-solid fa-rotate-right"></i></button>
+          </div>
+          <div class="card-body" id="stations-list">
+            <div class="empty-state"><i class="fa-solid fa-fire-station"></i>Keine Wachen geladen</div>
+          </div>
+        </div>
+
+        <!-- Fahrzeug-Spawn hinzufügen -->
+        <div class="card" id="add-spawn-card" style="display:none">
+          <div class="card-header">
+            <i class="fa-solid fa-truck-fire"></i>
+            <span class="card-header-title">Fahrzeug-Spawn hinzufügen</span>
+            <div class="card-header-spacer"></div>
+            <span id="add-spawn-station-label" style="font-family:var(--mono);font-size:10px;color:var(--fire)"></span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Modell</label>
+                <input class="form-input" id="new-spawn-model" type="text" placeholder="firetruk">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Label</label>
+                <input class="form-input" id="new-spawn-label" type="text" placeholder="Löschfahrzeug">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">X</label><input class="form-input" type="number" step="0.01" id="new-spawn-x" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Y</label><input class="form-input" type="number" step="0.01" id="new-spawn-y" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Z</label><input class="form-input" type="number" step="0.01" id="new-spawn-z" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Heading</label><input class="form-input" type="number" step="0.1" id="new-spawn-w" placeholder="0.0"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 110px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-sm" onclick="getPosFor('new-spawn')"><i class="fa-solid fa-location-crosshairs"></i> Position</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-fire" onclick="addVehicleSpawn()"><i class="fa-solid fa-plus"></i> Spawn hinzufügen</button>
+              <button class="btn btn-ghost" onclick="closeSpawnCard()"><i class="fa-solid fa-xmark"></i> Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LAGER VERWALTEN ── -->
+      <div class="page" id="page-storage">
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-box-open"></i>
+            <span class="card-header-title">Neues Lager anlegen</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Name des Lagers</label>
+                <input class="form-input" id="new-storage-label" type="text" placeholder="z.B. Ausrüstungslager Wache 1">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">X</label><input class="form-input" type="number" step="0.01" id="new-storage-x" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Y</label><input class="form-input" type="number" step="0.01" id="new-storage-y" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Z</label><input class="form-input" type="number" step="0.01" id="new-storage-z" placeholder="0.0"></div>
+              <div class="form-group"><label class="form-label">Heading</label><input class="form-input" type="number" step="0.1" id="new-storage-w" placeholder="0.0"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex:0 0 110px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-sm" onclick="getPosFor('new-storage')"><i class="fa-solid fa-location-crosshairs"></i> Position</button>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-fire" onclick="addStorage()"><i class="fa-solid fa-plus"></i> Lager anlegen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fa-solid fa-list"></i>
+            <span class="card-header-title">Bestehende Lager</span>
+            <div class="card-header-spacer"></div>
+            <button class="btn btn-ghost btn-sm" onclick="loadStationStorageConfig()"><i class="fa-solid fa-rotate-right"></i></button>
+          </div>
+          <div class="card-body" id="storages-list">
+            <div class="empty-state"><i class="fa-solid fa-box-open"></i>Keine Lager geladen</div>
+          </div>
+        </div>
+
+      </div>
     </main>
   </div>
 </div>
@@ -1389,6 +1517,166 @@ function showToast(msg, type = 'info') {
   document.getElementById('toast-container').appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
+
+// ── STATION & STORAGE STATE ───────────────────
+let ssConfig = { stations: {}, spawns: {}, storages: {} };
+let activeSpawnStationId = null;
+let activeStorageId = null;
+
+function loadStationStorageConfig() {
+  nuiPost('adminGetStationStorageConfig');
+}
+
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'receiveStationStorageConfig') {
+    ssConfig.stations = e.data.stations || {};
+    ssConfig.spawns   = e.data.spawns   || {};
+    ssConfig.storages = e.data.storages || {};
+    renderStationsList();
+    renderStoragesList();
+  }
+});
+
+// ── WACHEN ────────────────────────────────────
+function renderStationsList() {
+  const el = document.getElementById('stations-list');
+  const entries = Object.entries(ssConfig.stations);
+  if (!entries.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-fire-station"></i>Keine Wachen</div>`;
+    return;
+  }
+  el.innerHTML = entries.map(([id, s]) => {
+    const spawns = ssConfig.spawns[id] || [];
+    const spawnHtml = spawns.length
+      ? spawns.map((sp, idx) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-family:var(--mono);font-size:10px;flex:1">🚒 ${sp.label} <span style="color:var(--muted)">(${sp.model})</span></span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">x:${(sp.x||0).toFixed(0)} y:${(sp.y||0).toFixed(0)}</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteVehicleSpawn(${id},${idx+1})"><i class="fa-solid fa-trash"></i></button>
+        </div>`).join('')
+      : `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 0">Keine Fahrzeug-Spawns</div>`;
+
+    return `<div class="callout-item" style="flex-direction:column;align-items:stretch;gap:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="callout-icon"><i class="fa-solid fa-fire-station"></i></div>
+        <div style="flex:1">
+          <div class="callout-title">Wache ${id} · ${s.label}</div>
+          <div class="callout-meta" style="font-family:var(--mono);font-size:9px">
+            x:${(s.x||0).toFixed(2)} y:${(s.y||0).toFixed(2)} z:${(s.z||0).toFixed(2)} h:${(s.w||0).toFixed(1)}
+          </div>
+        </div>
+        <button class="btn btn-success btn-sm" onclick="showAddSpawnCard(${id},'${s.label}')">
+          <i class="fa-solid fa-plus"></i> Spawn
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteStation(${id},'${s.label}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+      <div style="padding:0 6px">${spawnHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function addStation() {
+  const label = document.getElementById('new-station-label').value;
+  const x = parseFloat(document.getElementById('new-station-x').value);
+  const y = parseFloat(document.getElementById('new-station-y').value);
+  const z = parseFloat(document.getElementById('new-station-z').value);
+  const w = parseFloat(document.getElementById('new-station-w').value) || 0;
+  if (!label || isNaN(x) || isNaN(y) || isNaN(z)) { showToast('Alle Felder ausfüllen!', 'error'); return; }
+  nuiPost('adminAddStation', { label, x, y, z, w });
+  showToast('Wache wird angelegt…', 'info');
+  setTimeout(loadStationStorageConfig, 500);
+}
+
+function confirmDeleteStation(id, label) {
+  if (!confirm(`Wache "${label}" wirklich löschen? Alle Spawns werden ebenfalls entfernt.`)) return;
+  nuiPost('adminDeleteStation', { stationId: id });
+  showToast('Wache gelöscht', 'error');
+  setTimeout(loadStationStorageConfig, 500);
+}
+
+function showAddSpawnCard(stationId, label) {
+  activeSpawnStationId = stationId;
+  document.getElementById('add-spawn-station-label').textContent = 'Wache ' + stationId + ' · ' + label;
+  document.getElementById('add-spawn-card').style.display = '';
+  document.getElementById('add-spawn-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeSpawnCard() {
+  activeSpawnStationId = null;
+  document.getElementById('add-spawn-card').style.display = 'none';
+}
+
+function addVehicleSpawn() {
+  if (!activeSpawnStationId) return;
+  const model = document.getElementById('new-spawn-model').value;
+  const label = document.getElementById('new-spawn-label').value;
+  const x = parseFloat(document.getElementById('new-spawn-x').value);
+  const y = parseFloat(document.getElementById('new-spawn-y').value);
+  const z = parseFloat(document.getElementById('new-spawn-z').value);
+  const w = parseFloat(document.getElementById('new-spawn-w').value) || 0;
+  if (!model || !label || isNaN(x) || isNaN(y) || isNaN(z)) { showToast('Alle Felder ausfüllen!', 'error'); return; }
+  nuiPost('adminAddVehicleSpawn', { stationId: activeSpawnStationId, model, label, x, y, z, w });
+  showToast('Spawn hinzugefügt', 'success');
+  closeSpawnCard();
+  setTimeout(loadStationStorageConfig, 500);
+}
+
+function deleteVehicleSpawn(stationId, spawnIdx) {
+  if (!confirm('Spawn wirklich löschen?')) return;
+  nuiPost('adminDeleteVehicleSpawn', { stationId, spawnIdx });
+  showToast('Spawn gelöscht', 'error');
+  setTimeout(loadStationStorageConfig, 500);
+}
+
+// ── LAGER ─────────────────────────────────────
+function renderStoragesList() {
+  const el = document.getElementById('storages-list');
+  const entries = Object.entries(ssConfig.storages);
+  if (!entries.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-box-open"></i>Keine Lager</div>`;
+    return;
+  }
+  el.innerHTML = entries.map(([id, stor]) => {
+    return `<div class="callout-item" style="margin-bottom:8px">
+      <div class="callout-icon"><i class="fa-solid fa-box-open"></i></div>
+      <div class="callout-info">
+        <div class="callout-title">Lager ${id} · ${stor.label}</div>
+        <div class="callout-meta">
+          x:${(stor.x||0).toFixed(2)} y:${(stor.y||0).toFixed(2)} z:${(stor.z||0).toFixed(2)} · Inhalt über ox_inventory verwaltbar
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteStorage(${id},'${stor.label}')">
+          <i class="fa-solid fa-trash"></i> Löschen
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addStorage() {
+  const label = document.getElementById('new-storage-label').value;
+  const x = parseFloat(document.getElementById('new-storage-x').value);
+  const y = parseFloat(document.getElementById('new-storage-y').value);
+  const z = parseFloat(document.getElementById('new-storage-z').value);
+  const w = parseFloat(document.getElementById('new-storage-w').value) || 0;
+  if (!label || isNaN(x) || isNaN(y) || isNaN(z)) { showToast('Alle Felder ausfüllen!', 'error'); return; }
+  nuiPost('adminAddStorage', { label, x, y, z, w });
+  showToast('Lager wird angelegt…', 'info');
+  setTimeout(loadStationStorageConfig, 500);
+}
+
+function confirmDeleteStorage(id, label) {
+  if (!confirm(`Lager "${label}" wirklich löschen?`)) return;
+  nuiPost('adminDeleteStorage', { storageId: id });
+  showToast('Lager gelöscht', 'error');
+  setTimeout(loadStationStorageConfig, 500);
+}
+
+// Items werden direkt im ox_inventory Stash verwaltet
+
 </script>
 </body>
 </html>

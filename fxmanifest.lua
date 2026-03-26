@@ -4,7 +4,7 @@ lua54 'yes'
 
 name        'qbx_firedepartmentjob'
 description 'Feuerwehr Job Script für QBX Framework'
-author      'D4rkst3r'
+author      'YourName'
 version     '1.0.0'
 
 shared_scripts {
@@ -22,6 +22,7 @@ client_scripts {
     'client/ambulance.lua',
     'client/targets.lua',
     'client/admin.lua',
+    'client/storage.lua',
     'client/debug.lua',
 }
 
@@ -31,6 +32,7 @@ server_scripts {
     'server/callouts.lua',
     'server/vehicles.lua',
     'server/admin.lua',
+    'server/storage.lua',
     'server/config_edit.lua',
 }
 
@@ -47,5 +49,4 @@ dependencies {
     'ox_inventory',
     'ox_target',
     'oxmysql',
-    'qbx_vehiclekeys',  -- neu
 }

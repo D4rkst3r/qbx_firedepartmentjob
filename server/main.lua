@@ -5,6 +5,41 @@
 local function GetPlayer(src) return exports.qbx_core:GetPlayer(src) end
 local function GetPlayers()   return exports.qbx_core:GetQBPlayers()   end
 
+-- Eigene Duty-Tabelle – unabhängig von PlayerData.job.onDuty
+-- (SetJobDuty aktualisiert PlayerData nicht sofort zuverlässig)
+local dutyPlayers = {}
+
+local function SetDuty(src, duty)
+    dutyPlayers[src] = duty
+    exports.qbx_core:SetJobDuty(src, duty)
+    TriggerClientEvent('qbx_firedepartmentjob:client:SetDuty', src, duty)
+
+    -- Duty-Log in DB schreiben
+    local Player = GetPlayer(src)
+    if Player then
+        local citizenid = Player.PlayerData.citizenid
+        if duty then
+            MySQL.insert('INSERT INTO fd_duty_log (citizenid, duty_on) VALUES (?, NOW())', { citizenid })
+        else
+            MySQL.update('UPDATE fd_duty_log SET duty_off = NOW() WHERE citizenid = ? AND duty_off IS NULL ORDER BY id DESC LIMIT 1', { citizenid })
+        end
+    end
+end
+
+-- Beim Disconnect aufräumen
+AddEventHandler('playerDropped', function()
+    local src = source
+    if dutyPlayers[src] then
+        -- Duty-Log schließen
+        local Player = GetPlayer(src)
+        if Player then
+            local citizenid = Player.PlayerData.citizenid
+            MySQL.update('UPDATE fd_duty_log SET duty_off = NOW() WHERE citizenid = ? AND duty_off IS NULL', { citizenid })
+        end
+        dutyPlayers[src] = nil
+    end
+end)
+
 -- ──────────────────────────────────────────
 -- DIENST TOGGLE
 -- ──────────────────────────────────────────
@@ -14,17 +49,16 @@ RegisterNetEvent('qbx_firedepartmentjob:server:ToggleDuty', function()
     local Player = GetPlayer(src)
     if not Player then return end
 
-    local job = Player.PlayerData.job
-    if not IsFirefighter(job) then return end
+    if not IsFirefighter(Player.PlayerData.job) then return end
 
-    -- QBX speichert Duty-Status in job.onDuty (nach SetJobDuty)
-    -- Fallback auf metadata.duty für Rückwärtskompatibilität
-    local currentDuty = Player.PlayerData.job.onDuty or Player.PlayerData.metadata.duty or false
-    local newDuty     = not currentDuty
-
-    exports.qbx_core:SetJobDuty(src, newDuty)
-    TriggerClientEvent('qbx_firedepartmentjob:client:SetDuty', src, newDuty)
+    -- Aus eigener Tabelle lesen – zuverlässig
+    local currentDuty = dutyPlayers[src] or false
+    SetDuty(src, not currentDuty)
 end)
+
+-- Export für admin.lua
+exports('IsPlayerOnDuty', function(src) return dutyPlayers[src] or false end)
+exports('SetPlayerDuty', SetDuty)
 
 -- ──────────────────────────────────────────
 -- AUSRÜSTUNG GEBEN
@@ -128,12 +162,9 @@ end)
 
 RegisterNetEvent('qbx_firedepartmentjob:server:ReturnVehicle', function(netId)
     local veh = NetworkGetEntityFromNetworkId(netId)
-    if not DoesEntityExist(veh) then return end
-    if DoesEntityExist(veh) then
-        local plate = GetVehicleNumberPlateText(veh)
-        TriggerEvent('qbx_firedepartmentjob:server:UnregisterVehicle', plate)
-        DeleteEntity(veh)
-    end
+    local plate = GetVehicleNumberPlateText(veh)
+    TriggerEvent('qbx_firedepartmentjob:server:UnregisterVehicle', plate)
+    DeleteEntity(veh)
 end)
 
 -- ──────────────────────────────────────────
@@ -207,14 +238,8 @@ RegisterNetEvent('qbx_firedepartmentjob:server:SetOutfit', function(outfitName)
     TriggerClientEvent('qbx_firedepartmentjob:client:ApplyOutfit', src, outfitName)
 end)
 
--- ──────────────────────────────────────────
--- CLIENT: Gesundheit hinzufügen
--- ──────────────────────────────────────────
-
-RegisterNetEvent('qbx_firedepartmentjob:client:AddHealth', function(amount)
-    local ped = PlayerPedId()
-    SetEntityHealth(ped, math.min(200, GetEntityHealth(ped) + amount))
-end)
+-- Hinweis: AddHealth wird client-seitig via TriggerClientEvent behandelt
+-- Der Client empfängt das Event und setzt die Gesundheit lokal
 
 
 -- ──────────────────────────────────────────

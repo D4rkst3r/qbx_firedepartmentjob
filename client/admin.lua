@@ -214,3 +214,82 @@ end)
 RegisterNetEvent('qbx_firedepartmentjob:client:ReceiveFullConfig', function(data)
     SendNUIMessage({ type = 'receiveFullConfig', data = data })
 end)
+
+-- ──────────────────────────────────────────
+-- WACHEN & LAGER CALLBACKS
+-- ──────────────────────────────────────────
+
+-- Neue Wache anlegen
+RegisterNUICallback('adminAddStation', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminAddStation', data)
+    cb('ok')
+end)
+
+-- Wache löschen
+RegisterNUICallback('adminDeleteStation', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminDeleteStation', data.stationId)
+    cb('ok')
+end)
+
+-- Fahrzeug-Spawn hinzufügen
+RegisterNUICallback('adminAddVehicleSpawn', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminAddVehicleSpawn', data.stationId, data)
+    cb('ok')
+end)
+
+-- Fahrzeug-Spawn löschen
+RegisterNUICallback('adminDeleteVehicleSpawn', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminDeleteVehicleSpawn', data.stationId, data.spawnIdx)
+    cb('ok')
+end)
+
+-- Neues Lager anlegen
+RegisterNUICallback('adminAddStorage', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminAddStorage', data)
+    cb('ok')
+end)
+
+-- Lager löschen
+RegisterNUICallback('adminDeleteStorage', function(data, cb)
+    TriggerServerEvent('qbx_firedepartmentjob:server:AdminDeleteStorage', data.storageId)
+    cb('ok')
+end)
+
+-- Lager-Items werden direkt über ox_inventory UI verwaltet (kein NUI-Callback nötig)
+
+-- Vollständige Config für Station/Storage Tab
+RegisterNUICallback('adminGetStationStorageConfig', function(_, cb)
+    local stations = {}
+    for id, s in pairs(Config.Stations) do
+        stations[id] = {
+            label = s.label,
+            x = s.coords.x, y = s.coords.y, z = s.coords.z, w = s.coords.w,
+        }
+    end
+    local spawns = {}
+    for stId, spawnList in pairs(Config.VehicleSpawns) do
+        spawns[stId] = {}
+        for idx, sp in ipairs(spawnList) do
+            spawns[stId][idx] = {
+                model = sp.model, label = sp.label,
+                x = sp.coords.x, y = sp.coords.y, z = sp.coords.z, w = sp.coords.w,
+            }
+        end
+    end
+    local storages = {}
+    for id, stor in pairs(Config.Storage.Locations) do
+        storages[id] = {
+            label = stor.label,
+            x = stor.coords.x, y = stor.coords.y, z = stor.coords.z, w = stor.coords.w,
+            stationId = stor.stationId,
+            items = stor.items,
+        }
+    end
+    SendNUIMessage({
+        type = 'receiveStationStorageConfig',
+        stations = stations,
+        spawns   = spawns,
+        storages = storages,
+    })
+    cb('ok')
+end)

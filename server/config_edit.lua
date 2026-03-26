@@ -88,6 +88,8 @@ local function LoadAllConfigs()
         ::continue::
     end
 
+    -- Storage-Configs an storage.lua weitergeben
+    TriggerEvent('qbx_firedepartmentjob:server:LoadStorageConfigs', rows)
     print('^2[FD] Config aus Datenbank geladen (' .. #rows .. ' Einträge)^7')
 end
 
@@ -121,7 +123,17 @@ local function SendConfigToClient(src)
     -- Schlauch
     TriggerClientEvent('qbx_firedepartmentjob:client:UpdateHoseConfig', src,
         Config.Hose.MaxDistance, Config.Hose.WaterPressure)
+
+    -- Storage
+    TriggerEvent('qbx_firedepartmentjob:server:SendStorageToClient', src)
 end
+
+-- Client-seitiger Request (nach onResourceStart / OnPlayerLoaded)
+RegisterNetEvent('qbx_firedepartmentjob:server:RequestClientConfig', function()
+    local src = source
+    SendConfigToClient(src)
+    DebugLog('config_edit', 'Config an Client %d gesendet', src)
+end)
 
 function BroadcastConfigToClients()
     -- GetPlayers() (native) gibt Liste von Server-IDs zurück

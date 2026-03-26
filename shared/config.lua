@@ -132,3 +132,19 @@ Config.Paycheck = {
         [5] = 1500,
     },
 }
+
+-- ╔══════════════════════════════════════════╗
+-- ║              LAGER-SYSTEM                ║
+-- ║  ox_inventory Stash – kein Cooldown      ║
+-- ╚══════════════════════════════════════════╝
+
+Config.Storage = {
+    -- Lager-Standorte (Inhalt wird direkt im ox_inventory Stash verwaltet)
+    Locations = {
+        [1] = {
+            label     = 'Hauptlager – Wache 1',
+            coords    = vector4(1196.5, -1475.0, 34.86, 91.0),
+            stationId = 1,  -- Welcher Wache zugeordnet (optional)
+        },
+    },
+}

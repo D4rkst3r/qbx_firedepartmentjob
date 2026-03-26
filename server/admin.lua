@@ -36,7 +36,7 @@ local function GetFirefightersData()
                 name       = (charinfo and charinfo.firstname .. ' ' .. charinfo.lastname) or ('Spieler ' .. player.PlayerData.source),
                 grade      = job.grade.level,
                 gradeLabel = gradeLabels[job.grade.level] or 'Unbekannt',
-                onDuty     = player.PlayerData.job.onDuty or player.PlayerData.metadata.duty or false,
+                onDuty     = exports.qbx_firedepartmentjob:IsPlayerOnDuty(player.PlayerData.source),
             }
         end
     end
@@ -157,8 +157,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:AdminSetDuty', function(targetId,
     local Target = GetPlayer(targetId)
     if not Target then return end
 
-    exports.qbx_core:SetJobDuty(targetId, duty)
-    TriggerClientEvent('qbx_firedepartmentjob:client:SetDuty', targetId, duty)
+    exports.qbx_firedepartmentjob:SetPlayerDuty(targetId, duty)
     TriggerClientEvent('ox_lib:notify', targetId, {
         title = 'Admin',
         description = duty and 'Du wurdest in den Dienst versetzt.' or 'Du wurdest aus dem Dienst genommen.',
@@ -201,8 +200,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:AdminKickFromDuty', function(targ
     local Target = GetPlayer(targetId)
     if not Target then return end
 
-    exports.qbx_core:SetJobDuty(targetId, false)
-    TriggerClientEvent('qbx_firedepartmentjob:client:SetDuty', targetId, false)
+    exports.qbx_firedepartmentjob:SetPlayerDuty(targetId, false)
     TriggerClientEvent('ox_lib:notify', targetId, {
         title = 'Admin', description = 'Du wurdest vom Admin aus dem Dienst entfernt.', type = 'error',
     })
