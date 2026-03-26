@@ -12,9 +12,7 @@ RegisterCommand('fddebug', function()
     debugEnabled  = not debugEnabled
     Config.Debug  = debugEnabled
 
-    -- ox_target Zonen live togglen
     for _, station in pairs(Config.Stations) do
-        exports.ox_target:setDebug(debugEnabled)
     end
 
     lib.notify({
@@ -125,6 +123,5 @@ end
 RegisterNetEvent('qbx_firedepartmentjob:client:DebugToggle', function(state)
     debugEnabled = state
     Config.Debug = state
-    exports.ox_target:setDebug(state)
     DebugLog('debug.lua', 'Debug remote gesetzt: %s', tostring(state))
 end)

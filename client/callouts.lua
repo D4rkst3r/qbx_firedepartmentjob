@@ -10,7 +10,7 @@ local acceptedCallout = nil    -- Derzeit angenommener Einsatz
 -- ──────────────────────────────────────────
 
 RegisterNetEvent('qbx_firedepartmentjob:client:NewCallout', function(callout)
-    local playerData = QBX.Functions.GetPlayerData()
+    local playerData = exports.qbx_core:GetPlayerData()
     if not IsFirefighter(playerData.job) then return end
 
     -- Alert-Sound

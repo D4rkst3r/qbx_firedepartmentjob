@@ -6,6 +6,7 @@ local function GetPlayer(src) return exports.qbx_core:GetPlayer(src) end
 local function GetPlayers()   return exports.qbx_core:GetQBPlayers()   end
 
 ActiveCallouts = {}
+local calloutCount     = 0  -- Zähler weil #dict-table unzuverlässig
 local calloutIdCounter = 0
 
 -- ──────────────────────────────────────────
@@ -13,7 +14,7 @@ local calloutIdCounter = 0
 -- ──────────────────────────────────────────
 
 local function CreateCallout(typeKey, locationData)
-    if #ActiveCallouts >= Config.Callouts.MaxActiveCallouts then return end
+    if calloutCount >= Config.Callouts.MaxActiveCallouts then return end
 
     calloutIdCounter += 1
     local calloutType = Config.Callouts.Types[typeKey]
@@ -34,6 +35,7 @@ local function CreateCallout(typeKey, locationData)
     }
 
     ActiveCallouts[callout.id] = callout
+    calloutCount += 1
 
     MySQL.insert('INSERT INTO fd_callouts (callout_id, type, label, coords_x, coords_y, coords_z, priority, reward, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())', {
         callout.id, callout.type, callout.label,
@@ -59,7 +61,7 @@ end
 CreateThread(function()
     while true do
         Wait(math.random(3, 8) * 60 * 1000)
-        if #ActiveCallouts < Config.Callouts.MaxActiveCallouts then
+        if calloutCount < Config.Callouts.MaxActiveCallouts then
             local loc = Config.Callouts.Locations[math.random(#Config.Callouts.Locations)]
             CreateCallout(loc.type, loc)
         end
@@ -106,6 +108,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:CompleteCallout', function(callou
 
     MySQL.update('UPDATE fd_callouts SET completed = 1, completed_at = NOW() WHERE callout_id = ?', { calloutId })
     ActiveCallouts[calloutId] = nil
+    calloutCount = math.max(0, calloutCount - 1)
 
     local players = GetPlayers()
     for _, player in pairs(players) do

@@ -9,7 +9,7 @@ local spawnedVehicles = {}   -- Gespawnte Fahrzeuge { netId = plate }
 -- ──────────────────────────────────────────
 
 RegisterNetEvent('qbx_firedepartmentjob:client:SpawnVehicle', function(spawn)
-    local playerData = QBX.Functions.GetPlayerData()
+    local playerData = exports.qbx_core:GetPlayerData()
     if not IsFirefighter(playerData.job) then return end
 
     -- Prüfen ob schon ein Fahrzeug gespawnt ist

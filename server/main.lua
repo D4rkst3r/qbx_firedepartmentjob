@@ -68,7 +68,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:Paycheck', function()
     local job = Player.PlayerData.job
     if not IsFirefighter(job) then return end
 
-    local grade  = job.grade
+    local grade  = job.grade.level
     local amount = Config.Paycheck.Amounts[grade] or Config.Paycheck.Amounts[0]
 
     Player.Functions.AddMoney('bank', amount, 'firefighter-paycheck')
@@ -112,7 +112,7 @@ RegisterNetEvent('qbx_firedepartmentjob:server:SpawnVehicle', function(data)
 
     local netId = NetworkGetNetworkIdFromEntity(veh)
     local state = Player.PlayerData.charinfo
-    local name  = (state and state.name) or ('Spieler ' .. src)
+    local name  = (state and state.firstname and (state.firstname .. ' ' .. state.lastname)) or ('Spieler ' .. src)
     TriggerEvent('qbx_firedepartmentjob:server:RegisterVehicle', data.plate, data.model, name, netId)
 
     TriggerClientEvent('qbx_firedepartmentjob:client:VehicleSpawned', src, netId, data.plate)
